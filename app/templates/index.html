@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h1>Все блоги</h1>
+    {% if blogs %}
+        <div class="list-group">
+            {% for blog in blogs %}
+                <a href="{{ url_for('main.blog', blog_id=blog.id) }}" class="list-group-item list-group-item-action flex-column align-items-start mb-2">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ blog.title }}</h5>
+                        <small class="text-muted">{{ blog.created_at.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                    <p class="mb-1">{{ blog.description }}</p>
+                    <small class="text-muted">Автор: {{ blog.owner.username }}</small>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>Пока нет блогов. <a href="{{ url_for('main.new_blog') }}">Создайте первый!</a></p>
+    {% endif %}
+</div>
+{% endblock %}

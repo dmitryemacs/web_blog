@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>{{ blog.title }}</h2>
+        {% if current_user.is_authenticated and current_user == blog.owner %}
+            <div>
+                <a href="{{ url_for('main.edit_blog', blog_id=blog.id) }}" class="btn btn-warning btn-sm me-2">Редактировать блог</a>
+                <form action="{{ url_for('main.delete_blog', blog_id=blog.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Вы уверены, что хотите удалить этот блог? Все посты в нем также будут удалены.');">Удалить блог</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+    <p class="text-muted">{{ blog.description }}</p>
+    <p class="text-muted">Автор: {{ blog.owner.username }}</p>
+    <p class="text-muted">Создан: {{ blog.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+
+    <hr>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Посты в этом блоге</h3>
+        {% if current_user.is_authenticated and current_user == blog.owner %}
+            <a href="{{ url_for('main.new_post', blog_id=blog.id) }}" class="btn btn-primary btn-sm">Создать новый пост</a>
+        {% endif %}
+    </div>
+
+    {% if posts %}
+        <div class="list-group">
+            {% for post in posts %}
+                <a href="{{ url_for('main.post', post_id=post.id) }}" class="list-group-item list-group-item-action flex-column align-items-start mb-2">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ post.title }}</h5>
+                        <small class="text-muted">{{ post.created_at.strftime('%Y-%m-%d') }}</small>
+                    </div>
+                    <p class="mb-1">{{ post.content[:150] }}...</p> {# Показываем часть контента #}
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>В этом блоге пока нет постов.
+            {% if current_user.is_authenticated and current_user == blog.owner %}
+                <a href="{{ url_for('main.new_post', blog_id=blog.id) }}">Создайте первый!</a>
+            {% endif %}
+        </p>
+    {% endif %}
+{% endblock %}
