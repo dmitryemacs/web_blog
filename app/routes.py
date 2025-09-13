@@ -1,9 +1,9 @@
 # routes.py
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from app.models import User, Blog, Post, Comment, db
+from app.models import User, Blog, Post, Comment, db, Subscription # Добавлен Subscription
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.forms import RegistrationForm, LoginForm, BlogForm, PostForm
+from app.forms import RegistrationForm, LoginForm, BlogForm, PostForm, CommentForm # Добавлен CommentForm
 
 bp = Blueprint('main', __name__)
 
@@ -51,14 +51,28 @@ def index():
 def blog(blog_id):
     blog = Blog.query.get_or_404(blog_id)
     posts = Post.query.filter_by(blog_id=blog.id).order_by(Post.created_at.desc()).all()
-    return render_template('blog.html', blog=blog, posts=posts)
+    is_subscribed = False
+    if current_user.is_authenticated:
+        # Проверяем, подписан ли текущий пользователь на этот блог
+        is_subscribed = Subscription.query.filter_by(user_id=current_user.id, blog_id=blog.id).first() is not None
+    return render_template('blog.html', blog=blog, posts=posts, is_subscribed=is_subscribed) # Передаем is_subscribed
 
-@bp.route('/post/<int:post_id>')
+@bp.route('/post/<int:post_id>', methods=['GET', 'POST']) # Добавлен POST метод
 def post(post_id):
     post = Post.query.get_or_404(post_id)
-    # Здесь можно добавить загрузку комментариев, если они будут реализованы
-    # comments = Comment.query.filter_by(post_id=post.id).order_by(Comment.created_at.asc()).all()
-    return render_template('post.html', post=post) # Добавьте comments=comments если будете их передавать
+    comments = Comment.query.filter_by(post_id=post.id).order_by(Comment.created_at.asc()).all()
+    comment_form = CommentForm() # Инициализируем форму комментария
+
+    if comment_form.validate_on_submit() and current_user.is_authenticated:
+        comment = Comment(content=comment_form.content.data, post=post, author=current_user)
+        db.session.add(comment)
+        db.session.commit()
+        flash('Ваш комментарий успешно добавлен!', 'success')
+        return redirect(url_for('main.post', post_id=post.id))
+    
+    # Если форма была отправлена, но не прошла валидацию (например, пользователь не аутентифицирован, но форма отображается)
+    # или это GET запрос, просто отображаем страницу.
+    return render_template('post.html', post=post, comments=comments, comment_form=comment_form)
 
 # ---------------- CRUD для блогов ----------------
 @bp.route('/blog/new', methods=['GET', 'POST'])
@@ -147,3 +161,31 @@ def delete_post(post_id):
     db.session.commit()
     flash('Пост успешно удален!', 'info')
     return redirect(url_for('main.blog', blog_id=post.blog.id))
+
+# ---------------- Функции подписки ----------------
+@bp.route('/blog/<int:blog_id>/subscribe', methods=['POST'])
+@login_required
+def subscribe_blog(blog_id):
+    blog = Blog.query.get_or_404(blog_id)
+    # Проверяем, не подписан ли пользователь уже
+    if not Subscription.query.filter_by(user_id=current_user.id, blog_id=blog.id).first():
+        subscription = Subscription(user_id=current_user.id, blog_id=blog.id)
+        db.session.add(subscription)
+        db.session.commit()
+        flash(f'Вы успешно подписались на блог "{blog.title}"!', 'success')
+    else:
+        flash(f'Вы уже подписаны на блог "{blog.title}".', 'info')
+    return redirect(url_for('main.blog', blog_id=blog.id))
+
+@bp.route('/blog/<int:blog_id>/unsubscribe', methods=['POST'])
+@login_required
+def unsubscribe_blog(blog_id):
+    blog = Blog.query.get_or_404(blog_id)
+    subscription = Subscription.query.filter_by(user_id=current_user.id, blog_id=blog.id).first()
+    if subscription:
+        db.session.delete(subscription)
+        db.session.commit()
+        flash(f'Вы отписались от блога "{blog.title}".', 'info')
+    else:
+        flash(f'Вы не были подписаны на блог "{blog.title}".', 'warning')
+    return redirect(url_for('main.blog', blog_id=blog.id))
