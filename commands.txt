@@ -1,0 +1,16 @@
+Инициализируем миграции: flask db init
+Создаем миграцию: flask db migrate -m "Initial migration"
+Применяем миграцию: flask db upgrade
+
+Запуск проекта:
+Windows:
+    set FLASK_APP=run.py
+    set FLASK_ENV=development
+
+Linux:
+    export FLASK_APP=run.py
+    export FLASK_ENV=development
+
+Запуск сервера:
+    flask run
+    http://127.0.0.1:5000/
