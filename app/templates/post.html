@@ -1,56 +1,54 @@
 {% extends 'base.html' %}
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>{{ post.title }}</h2>
-        {% if current_user.is_authenticated and current_user == post.blog.owner %}
-            <div>
-                <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn btn-warning btn-sm me-2">Редактировать пост</a>
-                <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Вы уверены, что хотите удалить этот пост?');">Удалить пост</button>
-                </form>
-            </div>
-        {% endif %}
-    </div>
-    <p class="text-muted">В блоге: <a href="{{ url_for('main.blog', blog_id=post.blog.id) }}">{{ post.blog.title }}</a></p>
-    <p class="text-muted">Автор блога: {{ post.blog.owner.username }}</p>
-    <p class="text-muted">Создан: {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-    {% if post.updated_at %}
-        <p class="text-muted">Обновлен: {{ post.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    <h1>{{ post.title }}</h1>
+    {% if current_user.is_authenticated and current_user == post.blog.owner %}
+        <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn btn-secondary btn-sm">Редактировать пост</a>
+        <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="POST" style="display: inline;">
+            <button type="submit" class="btn btn-danger btn-sm">Удалить пост</button>
+        </form>
     {% endif %}
-    <hr>
-    <div class="post-content mb-4">
+    <p>В блоге: <a href="{{ url_for('main.blog', blog_id=post.blog.id) }}">{{ post.blog.title }}</a></p>
+    <p>Автор блога: {{ post.blog.owner.username }}</p>
+    <p>Создан: {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    {% if post.updated_at %}
+        <p>Обновлен: {{ post.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    {% endif %}
+    <div>
         {{ post.content | safe }} {# Использование | safe, если контент может содержать HTML #}
     </div>
 
-    {# Секция для комментариев (если будет реализована) #}
     <hr>
     <h3>Комментарии</h3>
-    {% if post.comments %}
-        <ul class="list-group mb-3">
-            {% for comment in post.comments %}
-                <li class="list-group-item">
-                    <small class="text-muted">{{ comment.author.username }} ({{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}):</small><br>
-                    {{ comment.content }}
-                </li>
-            {% endfor %}
-        </ul>
+    {% if comments %}
+        {% for comment in comments %}
+            <div class="card mb-2">
+                <div class="card-body">
+                    <h5 class="card-title">{{ comment.author.username }} <small class="text-muted">({{ comment.created_at.strftime('%Y-%m-%d %H:%M') }})</small></h5>
+                    <p class="card-text">{{ comment.content }}</p>
+                </div>
+            </div>
+        {% endfor %}
     {% else %}
         <p>Комментариев пока нет.</p>
     {% endif %}
 
-    {# Здесь можно добавить форму для добавления нового комментария #}
     {% if current_user.is_authenticated %}
-        {# <form method="POST" action="{{ url_for('main.add_comment', post_id=post.id) }}">
-            {{ comment_form.hidden_tag() }}
-            <div class="mb-3">
-                {{ comment_form.content.label(class="form-label") }}
-                {{ comment_form.content(class="form-control", rows="3") }}
-            </div>
-            {{ comment_form.submit(class="btn btn-primary") }}
-        </form> #}
-        <p class="text-muted">Для добавления комментариев требуется реализация формы и логики в `routes.py`.</p>
+        <div class="mt-4">
+            <h4>Оставить комментарий</h4>
+            <form method="POST" action="{{ url_for('main.post', post_id=post.id) }}"> {# Форма отправляется на тот же URL #}
+                {{ comment_form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ comment_form.content.label(class="form-label") }}
+                    {{ comment_form.content(class="form-control", rows="3") }}
+                    {% for error in comment_form.content.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {{ comment_form.submit(class="btn btn-primary") }}
+            </form>
+        </div>
     {% else %}
-        <p class="text-muted">Чтобы оставить комментарий, пожалуйста <a href="{{ url_for('main.login') }}">войдите</a>.</p>
+        <p class="mt-4">Чтобы оставить комментарий, пожалуйста <a href="{{ url_for('main.login') }}">войдите</a>.</p>
     {% endif %}
 
 {% endblock %}
