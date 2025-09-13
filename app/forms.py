@@ -36,3 +36,7 @@ class PostForm(FlaskForm):
     title = StringField('Название поста', validators=[DataRequired(), Length(min=1, max=150)])
     content = TextAreaField('Содержание поста', validators=[DataRequired()])
     submit = SubmitField('Сохранить пост')
+
+class CommentForm(FlaskForm):
+    content = TextAreaField('Ваш комментарий', validators=[DataRequired(), Length(min=1, max=500)])
+    submit = SubmitField('Оставить комментарий')
