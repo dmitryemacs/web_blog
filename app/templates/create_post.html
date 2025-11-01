@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block title %}Новый Пост{% endblock %}
+
+{% block content %}
+    <h1>Создать новый пост в блоге "{{ blog.title }}"</h1>
+    
+    <form method="POST" action="" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <div>
+            {{ form.title.label }}<br>
+            {{ form.title(size=64) }}
+            {% for error in form.title.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <br>
+        
+        <div>
+            {{ form.content.label }}<br>
+            {{ form.content(cols=80, rows=10) }}
+            {% for error in form.content.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <br>
+        
+        <div>
+            {{ form.attachment.label }}<br>
+            {{ form.attachment() }}
+            {% for error in form.attachment.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </div>
+        
+        <br>
+        
+        <div>
+            {{ form.submit() }}
+        </div>
+    </form>
+{% endblock %}

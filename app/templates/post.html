@@ -1,54 +1,132 @@
-{% extends 'base.html' %}
+{% extends "base.html" %} {# Используем "base.html" для стилей Bootstrap #}
+
+{% block title %}{{ post.title }}{% endblock %}
+
 {% block content %}
-    <h1>{{ post.title }}</h1>
-    {% if current_user.is_authenticated and current_user == post.blog.owner %}
-        <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn btn-secondary btn-sm">Редактировать пост</a>
-        <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="POST" style="display: inline;">
-            <button type="submit" class="btn btn-danger btn-sm">Удалить пост</button>
-        </form>
-    {% endif %}
-    <p>В блоге: <a href="{{ url_for('main.blog', blog_id=post.blog.id) }}">{{ post.blog.title }}</a></p>
-    <p>Автор блога: {{ post.blog.owner.username }}</p>
-    <p>Создан: {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-    {% if post.updated_at %}
-        <p>Обновлен: {{ post.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
-    {% endif %}
-    <div>
-        {{ post.content | safe }} {# Использование | safe, если контент может содержать HTML #}
-    </div>
-
-    <hr>
-    <h3>Комментарии</h3>
-    {% if comments %}
-        {% for comment in comments %}
-            <div class="card mb-2">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            
+            <article class="card shadow-lg mb-5">
                 <div class="card-body">
-                    <h5 class="card-title">{{ comment.author.username }} <small class="text-muted">({{ comment.created_at.strftime('%Y-%m-%d %H:%M') }})</small></h5>
-                    <p class="card-text">{{ comment.content }}</p>
-                </div>
-            </div>
-        {% endfor %}
-    {% else %}
-        <p>Комментариев пока нет.</p>
-    {% endif %}
+                    
+                    <h1 class="card-title mb-1 text-primary">{{ post.title }}</h1>
+                    <p class="card-subtitle text-muted mb-4">
+                        <small>Опубликовано: {{ post.created_at.strftime('%Y-%m-%d %H:%M') }} в блоге <a href="{{ url_for('main.blog', blog_id=post.blog.id) }}" class="text-decoration-none">{{ post.blog.title }}</a></small>
+                    </p>
+                    
+                    <div class="post-content mb-4 lead">
+                        {{ post.content }}
+                    </div>
 
-    {% if current_user.is_authenticated %}
-        <div class="mt-4">
-            <h4>Оставить комментарий</h4>
-            <form method="POST" action="{{ url_for('main.post', post_id=post.id) }}"> {# Форма отправляется на тот же URL #}
-                {{ comment_form.hidden_tag() }}
-                <div class="mb-3">
-                    {{ comment_form.content.label(class="form-label") }}
-                    {{ comment_form.content(class="form-control", rows="3") }}
-                    {% for error in comment_form.content.errors %}
-                        <div class="text-danger">{{ error }}</div>
+                    {% if post.attachments %}
+                        <div class="mb-4">
+                            <h5 class="mb-3">Прикрепления:</h5>
+                            <ul class="list-group">
+                                {% for attachment in post.attachments %}
+                                    <li class="list-group-item d-flex flex-column">
+                                        
+                                        {% set file_path = url_for('static', filename='uploads/' + attachment.filename) %}
+                                        
+                                        <div class="mb-2 d-flex justify-content-between align-items-center">
+                                            <strong>{{ attachment.original_filename }}</strong> 
+                                            <a href="{{ file_path }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                                <i class="bi bi-download"></i> Скачать
+                                            </a>
+                                        </div>
+
+                                        {% if attachment.file_type == 'image' %}
+                                            <img src="{{ file_path }}" alt="{{ attachment.original_filename }}" class="img-fluid rounded shadow-sm" style="max-height: 400px; object-fit: contain;">
+                                        {% elif attachment.file_type == 'audio' %}
+                                            <audio controls class="w-100">
+                                                <source src="{{ file_path }}" type="{{ attachment.mimetype }}">
+                                                Ваш браузер не поддерживает аудио.
+                                            </audio>
+                                        {% elif attachment.file_type == 'video' %}
+                                            <video controls class="img-fluid rounded shadow-sm" style="max-height: 400px; object-fit: contain;">
+                                                <source src="{{ file_path }}" type="{{ attachment.mimetype }}">
+                                                Ваш браузер не поддерживает видео.
+                                            </video>
+                                        {% else %}
+                                            <p class="text-muted small">Тип файла: {{ attachment.file_type }}</p>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex align-items-center mt-3">
+                        <span class="badge bg-secondary me-3">Лайки: {{ post.likes|length }}</span>
+                        
+                        {% if current_user.is_authenticated %}
+                            {# Обе формы используют main.like_post, который обрабатывает и лайк, и убрать лайк #}
+                            <form method="POST" action="{{ url_for('main.like_post', post_id=post.id) }}">
+                                <button type="submit" class="btn {% if is_liked %}btn-warning{% else %}btn-success{% endif %} btn-sm me-2">
+                                    {% if is_liked %}
+                                        <i class="bi bi-hand-thumbs-down"></i> Убрать лайк
+                                    {% else %}
+                                        <i class="bi bi-hand-thumbs-up"></i> Лайкнуть
+                                    {% endif %}
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        {# Кнопки редактирования/удаления поста #}
+                        {% if current_user.is_authenticated and post.blog.owner == current_user %}
+                            <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn btn-outline-secondary btn-sm me-2">Редактировать</a>
+                            <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}" onsubmit="return confirm('Вы уверены?');">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+            
+            <hr class="my-5">
+            
+            <div class="comments-section">
+                <h2 class="mb-4">Комментарии ({{ comments|length }})</h2>
+                
+                {% if current_user.is_authenticated %}
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">Оставить комментарий</h5>
+                            <form method="POST" action="">
+                                {{ form.hidden_tag() }}
+                                <div class="mb-3">
+                                    {{ form.content.label(class="form-label") }}
+                                    {{ form.content(class="form-control", rows="4") }}
+                                    {% for error in form.content.errors %}
+                                        <div class="text-danger small mt-1">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="d-grid gap-2 d-md-block">
+                                    {{ form.submit(class="btn btn-primary") }}
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <a href="{{ url_for('main.login', next=request.url) }}" class="alert-link">Войдите</a>, чтобы оставить комментарий.
+                    </div>
+                {% endif %}
+                
+                <div class="comments-list mt-4">
+                    {% for comment in comments %}
+                        <div class="card mb-3 shadow-sm border-light">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0 text-success">{{ comment.author.username }}</h6>
+                                    <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </div>
+                                <p class="card-text">{{ comment.content }}</p>
+                            </div>
+                        </div>
                     {% endfor %}
                 </div>
-                {{ comment_form.submit(class="btn btn-primary") }}
-            </form>
+            </div>
+            
         </div>
-    {% else %}
-        <p class="mt-4">Чтобы оставить комментарий, пожалуйста <a href="{{ url_for('main.login') }}">войдите</a>.</p>
-    {% endif %}
-
+    </div>
 {% endblock %}

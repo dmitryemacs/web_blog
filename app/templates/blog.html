@@ -1,48 +1,56 @@
 {% extends 'base.html' %}
 {% block content %}
-    <h1>{{ blog.title }}</h1>
-    {% if current_user.is_authenticated %}
-        {% if current_user == blog.owner %}
-            <a href="{{ url_for('main.edit_blog', blog_id=blog.id) }}" class="btn btn-secondary btn-sm">Редактировать блог</a>
-            <form action="{{ url_for('main.delete_blog', blog_id=blog.id) }}" method="POST" style="display: inline;">
-                <button type="submit" class="btn btn-danger btn-sm">Удалить блог</button>
-            </form>
-            <a href="{{ url_for('main.new_post', blog_id=blog.id) }}" class="btn btn-primary btn-sm">Создать новый пост</a>
-        {% else %}
-            {# Кнопки подписки/отписки для других пользователей #}
-            {% if is_subscribed %}
-                <form action="{{ url_for('main.unsubscribe_blog', blog_id=blog.id) }}" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-warning btn-sm">Отписаться</button>
+    <h1 class="mb-3 text-primary">{{ blog.title }}</h1>
+    
+    <div class="mb-3">
+        {% if current_user.is_authenticated %}
+            {% if current_user == blog.owner %}
+                <a href="{{ url_for('main.edit_blog', blog_id=blog.id) }}" class="btn btn-secondary btn-sm me-2">Редактировать блог</a>
+                <form action="{{ url_for('main.delete_blog', blog_id=blog.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger btn-sm me-2">Удалить блог</button>
                 </form>
+                <a href="{{ url_for('main.new_post', blog_id=blog.id) }}" class="btn btn-success btn-sm">Создать новый пост</a>
             {% else %}
-                <form action="{{ url_for('main.subscribe_blog', blog_id=blog.id) }}" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-success btn-sm">Подписаться</button>
-                </form>
+                {# Кнопки подписки/отписки для других пользователей #}
+                {% if is_subscribed %}
+                    <form action="{{ url_for('main.unsubscribe_blog', blog_id=blog.id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-warning btn-sm">Отписаться</button>
+                    </form>
+                {% else %}
+                    <form action="{{ url_for('main.subscribe_blog', blog_id=blog.id) }}" method="POST" style="display: inline;">
+                        <button type="submit" class="btn btn-success btn-sm">Подписаться</button>
+                    </form>
+                {% endif %}
             {% endif %}
         {% endif %}
-    {% endif %}
+    </div>
 
-    <p>{{ blog.description }}</p>
-    <p>Автор: {{ blog.owner.username }}</p>
-    <p>Создан: {{ blog.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    <p class="lead">{{ blog.description }}</p>
+    <p class="text-muted small">Автор: **{{ blog.owner.username }}** | Создан: {{ blog.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
 
     <hr>
-    <h3>Посты в этом блоге</h3>
+    <h3 class="mt-4 mb-3">Посты в этом блоге</h3>
     {% if posts %}
+        <div class="row">
         {% for post in posts %}
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h5 class="card-title"><a href="{{ url_for('main.post', post_id=post.id) }}">{{ post.title }}</a></h5>
-                    <h6 class="card-subtitle mb-2 text-muted">{{ post.created_at.strftime('%Y-%m-%d') }}</h6>
-                    <p class="card-text">{{ post.content[:150] }}...</p> {# Показываем часть контента #}
-                    <a href="{{ url_for('main.post', post_id=post.id) }}" class="card-link">Читать далее</a>
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title"><a href="{{ url_for('main.post', post_id=post.id) }}" class="text-decoration-none text-dark">{{ post.title }}</a></h5>
+                        <h6 class="card-subtitle mb-2 text-muted">{{ post.created_at.strftime('%Y-%m-%d') }}</h6>
+                        <p class="card-text flex-grow-1">{{ post.content[:150] }}...</p> {# Показываем часть контента #}
+                        <a href="{{ url_for('main.post', post_id=post.id) }}" class="btn btn-outline-primary btn-sm mt-auto">Читать далее</a>
+                    </div>
                 </div>
             </div>
         {% endfor %}
+        </div>
     {% else %}
-        <p>В этом блоге пока нет постов.</p>
-        {% if current_user.is_authenticated and current_user == blog.owner %}
-            <p><a href="{{ url_for('main.new_post', blog_id=blog.id) }}">Создайте первый!</a></p>
-        {% endif %}
+        <div class="alert alert-info" role="alert">
+            В этом блоге пока нет постов. 
+            {% if current_user.is_authenticated and current_user == blog.owner %}
+                <a href="{{ url_for('main.new_post', blog_id=blog.id) }}" class="alert-link">Создайте первый!</a>
+            {% endif %}
+        </div>
     {% endif %}
 {% endblock %}

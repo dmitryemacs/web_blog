@@ -1,22 +1,31 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-4">
-    <h1>Все блоги</h1>
+    <h1 class="mb-4">Все блоги</h1>
     {% if blogs %}
-        <div class="list-group">
+        <div class="row">
             {% for blog in blogs %}
-                <a href="{{ url_for('main.blog', blog_id=blog.id) }}" class="list-group-item list-group-item-action flex-column align-items-start mb-2">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ blog.title }}</h5>
-                        <small class="text-muted">{{ blog.created_at.strftime('%Y-%m-%d') }}</small>
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm border-info">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title mb-2">
+                                <a href="{{ url_for('main.blog', blog_id=blog.id) }}" class="text-decoration-none text-dark">{{ blog.title }}</a>
+                            </h5>
+                            <p class="card-text flex-grow-1">{{ blog.description }}</p>
+                            <div class="mt-auto">
+                                <small class="text-muted d-block">Автор: **{{ blog.owner.username }}**</small>
+                                <small class="text-muted d-block">Создан: {{ blog.created_at.strftime('%Y-%m-%d') }}</small>
+                                <a href="{{ url_for('main.blog', blog_id=blog.id) }}" class="btn btn-sm btn-outline-primary mt-2">Перейти к блогу</a>
+                            </div>
+                        </div>
                     </div>
-                    <p class="mb-1">{{ blog.description }}</p>
-                    <small class="text-muted">Автор: {{ blog.owner.username }}</small>
-                </a>
+                </div>
             {% endfor %}
         </div>
     {% else %}
-        <p>Пока нет блогов. <a href="{{ url_for('main.new_blog') }}">Создайте первый!</a></p>
+        <div class="alert alert-info" role="alert">
+            Пока нет блогов. <a href="{{ url_for('main.new_blog') }}">Создайте первый!</a>
+        </div>
     {% endif %}
 </div>
 {% endblock %}
