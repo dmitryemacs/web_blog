@@ -11,8 +11,8 @@ def load_user(user_id):
 # Ассоциативная таблица для связи многие-ко-многим между Post и Tag
 post_tags = db.Table(
     'post_tags',
-    db.Column('post_id', db.Integer, db.ForeignKey('post.id'), primary_key=True),
-    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True)
+    db.Column('post_id', db.Integer, db.ForeignKey('post.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id', ondelete='CASCADE'), primary_key=True)
 )
 
 class User(db.Model, UserMixin):
@@ -20,40 +20,67 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), default='reader') # Роль пользователя (например, 'reader', 'admin')
-    blogs = db.relationship('Blog', backref='owner', lazy=True) # Блоги, принадлежащие пользователю
-    comments = db.relationship('Comment', backref='author', lazy=True) # Комментарии, написанные пользователем
-    likes = db.relationship('Like', backref='user', lazy=True) # Лайки, поставленные пользователем
-    subscriptions = db.relationship('Subscription', backref='user', lazy=True) # Подписки пользователя
+    role = db.Column(db.String(20), default='reader') # Роль пользователя
+    
+    # ИСПРАВЛЕНО: Добавлено cascade='all, delete-orphan'
+    blogs = db.relationship('Blog', backref='owner', lazy=True, cascade='all, delete-orphan') 
+    
+    # ИСПРАВЛЕНО: Добавлены ondelete='CASCADE' для зависимых моделей, чтобы удаление пользователя работало
+    comments = db.relationship('Comment', backref='author', lazy=True, cascade='all, delete-orphan') 
+    likes = db.relationship('Like', backref='user', lazy=True, cascade='all, delete-orphan') 
+    subscriptions = db.relationship('Subscription', backref='subscriber', lazy=True, cascade='all, delete-orphan') 
+    uploaded_attachments = db.relationship('Attachment', backref='uploader', lazy=True, foreign_keys='Attachment.user_id', cascade='all, delete-orphan')
 
     def __repr__(self):
-        return f"User('{self.username}', '{self.email}')"
+        return f"User('{self.username}', '{self.email}', 'Role: {self.role}')"
 
 class Blog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Внешний ключ на пользователя-владельца
-    title = db.Column(db.String(150), nullable=False)
-    description = db.Column(db.Text)
+    # ИСПРАВЛЕНО: Добавлено ondelete='CASCADE'
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False) # Внешний ключ на владельца блога
+    title = db.Column(db.String(150), nullable=False) # Название блога
+    description = db.Column(db.Text, nullable=False) # Описание блога
     created_at = db.Column(db.DateTime, default=datetime.utcnow) # Дата создания
-    posts = db.relationship('Post', backref='blog', lazy=True) # Посты в этом блоге
-    subscriptions = db.relationship('Subscription', backref='blog', lazy=True) # Подписки на этот блог
+    posts = db.relationship('Post', backref='blog', lazy=True, cascade='all, delete-orphan') # Посты в этом блоге
+    subscribers = db.relationship('Subscription', backref='blog', lazy=True, cascade='all, delete-orphan') # Подписчики блога
 
     def __repr__(self):
-        return f"Blog('{self.title}', '{self.created_at}')"
+        return f"Blog('{self.title}', 'Owner ID: {self.owner_id}')"
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    blog_id = db.Column(db.Integer, db.ForeignKey('blog.id'), nullable=False) # Внешний ключ на блог
-    title = db.Column(db.String(150), nullable=False)
-    content = db.Column(db.Text, nullable=False)
+    # ИСПРАВЛЕНО: Добавлено ondelete='CASCADE'
+    blog_id = db.Column(db.Integer, db.ForeignKey('blog.id', ondelete='CASCADE'), nullable=False) # Внешний ключ на блог
+    title = db.Column(db.String(150), nullable=False) # Заголовок поста
+    content = db.Column(db.Text, nullable=False) # Содержание поста
     created_at = db.Column(db.DateTime, default=datetime.utcnow) # Дата создания
-    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow) # Дата последнего обновления
-    comments = db.relationship('Comment', backref='post', lazy=True) # Комментарии к этому посту
-    likes = db.relationship('Like', backref='post', lazy=True) # Лайки к этому посту
-    tags = db.relationship('Tag', secondary=post_tags, backref='posts') # Теги, связанные с этим постом
+    
+    comments = db.relationship('Comment', backref='post', lazy=True, cascade='all, delete-orphan') # Комментарии к посту
+    likes = db.relationship('Like', backref='post', lazy=True, cascade='all, delete-orphan') # Лайки к посту
+    tags = db.relationship('Tag', secondary=post_tags, lazy='subquery', backref=db.backref('posts', lazy=True))
+    
+    # Новое отношение для прикрепленных файлов
+    attachments = db.relationship('Attachment', backref='post', lazy=True, cascade='all, delete-orphan', foreign_keys='Attachment.post_id') 
 
     def __repr__(self):
         return f"Post('{self.title}', '{self.created_at}')"
+
+# ... (Остальные классы Tag, Attachment, Comment, Like, Subscription) ...
+
+class Attachment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    # ИСПРАВЛЕНО: Добавлено ondelete='CASCADE'
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id', ondelete='CASCADE'), nullable=False) # К какому посту относится
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False) # Кто загрузил файл
+    filename = db.Column(db.String(255), nullable=False) # Имя файла, под которым он сохранен на сервере (secure_filename)
+    original_filename = db.Column(db.String(255)) # Исходное имя файла
+    mimetype = db.Column(db.String(100), nullable=False) # MIME-тип файла
+    file_type = db.Column(db.String(10), nullable=False) # Тип: 'image', 'video', 'audio', 'other'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"Attachment('{self.filename}', 'Post ID: {self.post_id}', 'Type: {self.file_type}')"
+
 
 class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -64,8 +91,8 @@ class Tag(db.Model):
 
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False) # Внешний ключ на пост
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Внешний ключ на пользователя-автора
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id', ondelete='CASCADE'), nullable=False) # Внешний ключ на пост
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False) # Внешний ключ на пользователя-автора
     content = db.Column(db.Text, nullable=False) # Содержание комментария
     created_at = db.Column(db.DateTime, default=datetime.utcnow) # Дата создания
 
@@ -74,8 +101,8 @@ class Comment(db.Model):
 
 class Like(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False) # Внешний ключ на пост
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Внешний ключ на пользователя
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id', ondelete='CASCADE'), nullable=False) # Внешний ключ на пост
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False) # Внешний ключ на пользователя
     created_at = db.Column(db.DateTime, default=datetime.utcnow) # Дата создания лайка
 
     def __repr__(self):
@@ -83,9 +110,9 @@ class Like(db.Model):
 
 class Subscription(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Внешний ключ на пользователя
-    blog_id = db.Column(db.Integer, db.ForeignKey('blog.id'), nullable=False) # Внешний ключ на блог
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False) # Внешний ключ на пользователя
+    blog_id = db.Column(db.Integer, db.ForeignKey('blog.id', ondelete='CASCADE'), nullable=False) # Внешний ключ на блог
     created_at = db.Column(db.DateTime, default=datetime.utcnow) # Дата подписки
 
     def __repr__(self):
-        return f"Subscription('{self.user_id}', '{self.blog_id}')"
+        return f"Subscription('User: {self.user_id}', 'Blog: {self.blog_id}')"

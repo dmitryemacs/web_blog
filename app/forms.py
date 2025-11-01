@@ -2,7 +2,8 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
-from app.models import User # Импортируем модель User для проверки уникальности
+from app.models import User 
+from flask_wtf.file import FileField, FileAllowed 
 
 class RegistrationForm(FlaskForm):
     username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=2, max=80)])
@@ -35,6 +36,11 @@ class BlogForm(FlaskForm):
 class PostForm(FlaskForm):
     title = StringField('Название поста', validators=[DataRequired(), Length(min=1, max=150)])
     content = TextAreaField('Содержание поста', validators=[DataRequired()])
+    # Новое поле для загрузки файла
+    attachment = FileField('Прикрепить файл (фото/музыка/видео)', validators=[
+        FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp3', 'wav', 'ogg', 'mp4', 'mov', 'avi'], 
+                    'Разрешены только файлы изображений, аудио и видео.')
+    ])
     submit = SubmitField('Сохранить пост')
 
 class CommentForm(FlaskForm):
