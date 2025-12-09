@@ -1,4 +1,4 @@
-# __init__.py
+# app/__init__.py
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -17,6 +17,10 @@ def create_app():
     db.init_app(app) 
     migrate.init_app(app, db) 
     login_manager.init_app(app) 
+
+    # Регистрация кастомных фильтров
+    from app.custom_filters import nl2br
+    app.jinja_env.filters['nl2br'] = nl2br
 
     # Импорт и регистрация Blueprint
     from app import routes, models
