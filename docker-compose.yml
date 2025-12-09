@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./static/uploads:/app/static/uploads
+      - ./:/app
+    environment:
+      - DATABASE_URL=postgresql://blog_user:blog_password@db:5432/blogdb
+      - SECRET_KEY=your-secret-key-change-in-production
+      - FLASK_APP=run.py
+    depends_on:
+      - db
+    command: >
+      sh -c "sleep 3 &&
+             python create_tables.py &&
+             flask run --host=0.0.0.0"
+
+  db:
+    image: postgres:13-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=blog_user
+      - POSTGRES_PASSWORD=blog_password
+      - POSTGRES_DB=blogdb
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
