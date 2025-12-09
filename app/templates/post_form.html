@@ -5,8 +5,8 @@
         <div class="col-md-8">
             <div class="card shadow-lg">
                 <div class="card-body">
-                    <h2 class="card-title mb-4 text-center">{{ title }}</h2> {# Передаем заголовок из routes.py #}
-                    <form method="POST">
+                    <h2 class="card-title mb-4 text-center">{{ title }}</h2>
+                    <form method="POST" enctype="multipart/form-data">
                         {{ form.hidden_tag() }}
                         <div class="mb-3">
                             {{ form.title.label(class="form-label") }}
@@ -21,6 +21,14 @@
                             {% for error in form.content.errors %}
                                 <div class="text-danger">{{ error }}</div>
                             {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="attachments" class="form-label">Прикрепить файлы (можно несколько)</label>
+                            <input type="file" class="form-control" id="attachments" name="attachments" multiple>
+                            <small class="form-text text-muted">
+                                Удерживайте Ctrl (или Cmd на Mac) для выбора нескольких файлов.<br>
+                                Разрешены: изображения (jpg, png, gif), аудио (mp3, wav, ogg), видео (mp4, mov, avi)
+                            </small>
                         </div>
                         <div class="d-grid gap-2">
                             {{ form.submit(class="btn btn-primary") }}
