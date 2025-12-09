@@ -12,20 +12,30 @@ from datetime import datetime
 bp = Blueprint('main', __name__)
 
 # ---------------- Вспомогательные функции для файлов ----------------
-
 def allowed_file(filename):
-    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'ogg', 'mp4', 'mov', 'avi'}
+    allowed_extensions = {
+        'png', 'jpg', 'jpeg', 'gif',  # изображения
+        'mp3', 'wav', 'ogg', 'flac',  # аудио
+        'mp4', 'mov', 'avi', 'mkv', 'webm',  # видео
+        'pdf', 'doc', 'docx', 'txt', 'rtf'  # документы
+    }
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
 def get_file_type(extension):
-    if extension in {'png', 'jpg', 'jpeg', 'gif'}:
+    image_ext = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+    audio_ext = {'mp3', 'wav', 'ogg', 'flac', 'm4a'}
+    video_ext = {'mp4', 'mov', 'avi', 'mkv', 'webm', 'flv'}
+    doc_ext = {'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'}
+    
+    if extension in image_ext:
         return 'image'
-    elif extension in {'mp3', 'wav', 'ogg'}:
+    elif extension in audio_ext:
         return 'audio'
-    elif extension in {'mp4', 'mov', 'avi'}:
+    elif extension in video_ext:
         return 'video'
+    elif extension in doc_ext:
+        return 'document'
     return 'other'
-
 # ---------------- Регистрация и логин ----------------
 
 @bp.route('/register', methods=['GET', 'POST'])
@@ -185,7 +195,7 @@ def new_post(blog_id):
         post = Post(title=form.title.data, content=form.content.data, blog=blog)
         db.session.add(post)
         
-        # Обработка прикрепленного файла
+        # Обработка прикрепленного файла - ИСПРАВЛЕНО: form.attachment.data вместо form.attachments.data
         if form.attachment.data:
             file = form.attachment.data
             if file and allowed_file(file.filename):
@@ -355,3 +365,30 @@ def delete_comment(comment_id):
 def uploaded_file(filename):
     from flask import send_from_directory
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+
+# delete attachment
+@bp.route('/attachment/<int:attachment_id>/delete', methods=['POST'])
+@login_required
+def delete_attachment(attachment_id):
+    attachment = Attachment.query.get_or_404(attachment_id)
+    post_id = attachment.post.id
+    
+    # Проверяем права: владелец поста или администратор
+    if attachment.post.blog.owner != current_user and current_user.role != 'admin':
+        flash('Вы не можете удалить это вложение.', 'danger')
+        return redirect(url_for('main.post', post_id=post_id))
+    
+    # Удаляем файл с диска
+    try:
+        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], attachment.filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except Exception as e:
+        flash(f'Ошибка при удалении файла: {str(e)}', 'warning')
+    
+    # Удаляем запись из базы
+    db.session.delete(attachment)
+    db.session.commit()
+    
+    flash('Вложение удалено.', 'success')
+    return redirect(url_for('main.post', post_id=post_id))
