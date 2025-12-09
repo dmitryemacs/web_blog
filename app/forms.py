@@ -3,7 +3,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
 from app.models import User 
-from flask_wtf.file import FileField, FileAllowed 
+from flask_wtf.file import FileField, FileAllowed  # Убрали MultipleFileField
 
 class RegistrationForm(FlaskForm):
     username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=2, max=80)])
@@ -12,7 +12,6 @@ class RegistrationForm(FlaskForm):
     confirm_password = PasswordField('Повторите пароль', validators=[DataRequired(), EqualTo('password', message='Пароли должны совпадать')])
     submit = SubmitField('Зарегистрироваться')
 
-    # Пользовательские валидаторы для проверки уникальности имени пользователя и email
     def validate_username(self, username):
         user = User.query.filter_by(username=username.data).first()
         if user:
@@ -36,8 +35,8 @@ class BlogForm(FlaskForm):
 class PostForm(FlaskForm):
     title = StringField('Название поста', validators=[DataRequired(), Length(min=1, max=150)])
     content = TextAreaField('Содержание поста', validators=[DataRequired()])
-    # Новое поле для загрузки файла
-    attachment = FileField('Прикрепить файл (фото/музыка/видео)', validators=[
+    # Для множественной загрузки используем обычное FileField
+    attachment = FileField('Прикрепить файлы (фото/музыка/видео)', validators=[
         FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp3', 'wav', 'ogg', 'mp4', 'mov', 'avi'], 
                     'Разрешены только файлы изображений, аудио и видео.')
     ])
