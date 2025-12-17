@@ -1,35 +1,177 @@
 {% extends "base.html" %}
+{% block title %}Вход | DailyPage{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="card-title text-center mb-4">Вход</h2>
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-lg hover-lift">
+                <div class="card-body p-4 p-md-5">
+                    <!-- Заголовок -->
+                    <div class="text-center mb-4">
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                             style="width: 80px; height: 80px;">
+                            <i class="bi bi-person-circle text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <h2 class="fw-bold mb-2">Вход в аккаунт</h2>
+                        <p class="text-muted">Введите свои данные для входа</p>
+                    </div>
+                    
+                    <!-- Форма -->
                     <form method="POST">
                         {{ form.hidden_tag() }}
-                        <div class="mb-3">
-                            {{ form.email.label(class="form-label") }}
-                            {{ form.email(class="form-control") }}
+                        
+                        <!-- Поле email -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-envelope me-1"></i>Email адрес
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="bi bi-envelope text-muted"></i>
+                                </span>
+                                {{ form.email(class="form-control border-start-0 ps-0", placeholder="example@email.com") }}
+                            </div>
                             {% for error in form.email.errors %}
-                                <div class="text-danger">{{ error }}</div>
+                                <div class="text-danger small mt-1 d-flex align-items-center">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
                             {% endfor %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.password.label(class="form-label") }}
-                            {{ form.password(class="form-control") }}
+                        
+                        <!-- Поле пароля -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-key me-1"></i>Пароль
+                                </label>
+                                <a href="#" class="text-decoration-none small text-primary">
+                                    Забыли пароль?
+                                </a>
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0">
+                                    <i class="bi bi-lock text-muted"></i>
+                                </span>
+                                {{ form.password(class="form-control border-start-0 ps-0", placeholder="Введите пароль", id="password") }}
+                                <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                             {% for error in form.password.errors %}
-                                <div class="text-danger">{{ error }}</div>
+                                <div class="text-danger small mt-1 d-flex align-items-center">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
                             {% endfor %}
                         </div>
+                        
+                        <!-- Запомнить меня -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remember">
+                                <label class="form-check-label text-muted" for="remember">
+                                    Запомнить меня
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Кнопка входа -->
                         <div class="d-grid gap-2">
-                            {{ form.submit(class="btn btn-primary") }}
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Войти
+                            </button>
+                        </div>
+                        
+                        <!-- Разделитель -->
+                        <div class="position-relative my-4">
+                            <hr class="my-4">
+                            <div class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted">
+                                или
+                            </div>
+                        </div>
+                        
+                        <!-- Альтернативные способы входа -->
+                        <div class="mb-4">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-secondary">
+                                    <i class="bi bi-google me-2"></i>Войти через Google
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary">
+                                    <i class="bi bi-github me-2"></i>Войти через GitHub
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Ссылка на регистрацию -->
+                        <div class="text-center">
+                            <p class="text-muted mb-0">
+                                Ещё нет аккаунта?
+                                <a href="{{ url_for('main.register') }}" class="text-decoration-none fw-semibold text-primary">
+                                    Зарегистрироваться
+                                </a>
+                            </p>
                         </div>
                     </form>
-                    <p class="mt-3 text-center">Нет аккаунта? <a href="{{ url_for('main.register') }}">Зарегистрироваться</a></p>
                 </div>
+            </div>
+            
+            <!-- Дополнительная информация -->
+            <div class="text-center mt-4">
+                <p class="text-muted small">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Ваши данные защищены и никогда не передаются третьим лицам
+                </p>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .form-control:focus {
+        box-shadow: none;
+    }
+    
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 2rem !important;
+        }
+        
+        .btn-lg {
+            padding: 0.75rem 1.5rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .card-body {
+            padding: 1.5rem !important;
+        }
+        
+        .btn-lg {
+            padding: 0.6rem 1.25rem;
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Переключение видимости пароля
+        const togglePassword = document.getElementById('togglePassword');
+        const password = document.getElementById('password');
+        
+        if (togglePassword && password) {
+            togglePassword.addEventListener('click', function() {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                this.innerHTML = type === 'password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
+            });
+        }
+        
+        // Автофокус на первое поле
+        const emailField = document.querySelector('input[name="email"]');
+        if (emailField) {
+            emailField.focus();
+        }
+    });
+</script>
 {% endblock %}

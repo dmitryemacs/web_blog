@@ -1,49 +1,318 @@
 {% extends "base.html" %}
+{% block title %}Регистрация | DailyPage{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="card-title text-center mb-4">Регистрация</h2>
-                    <form method="POST">
+        <div class="col-md-8 col-lg-7">
+            <div class="card border-0 shadow-lg hover-lift">
+                <div class="card-body p-4 p-md-5">
+                    <!-- Заголовок -->
+                    <div class="text-center mb-5">
+                        <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                             style="width: 80px; height: 80px;">
+                            <i class="bi bi-person-plus text-success" style="font-size: 2rem;"></i>
+                        </div>
+                        <h2 class="fw-bold mb-2">Создать аккаунт</h2>
+                        <p class="text-muted">Присоединяйтесь к нашему сообществу</p>
+                    </div>
+                    
+                    <!-- Форма -->
+                    <form method="POST" id="registerForm">
                         {{ form.hidden_tag() }}
-                        <div class="mb-3">
-                            {{ form.username.label(class="form-label") }}
-                            {{ form.username(class="form-control") }}
-                            {% for error in form.username.errors %}
-                                <div class="text-danger">{{ error }}</div>
-                            {% endfor %}
+                        
+                        <div class="row g-3">
+                            <!-- Имя пользователя -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-person-circle me-1"></i>Имя пользователя
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-at text-muted"></i>
+                                    </span>
+                                    {{ form.username(class="form-control border-start-0 ps-0", placeholder="Придумайте имя") }}
+                                </div>
+                                {% for error in form.username.errors %}
+                                    <div class="text-danger small mt-1 d-flex align-items-center">
+                                        <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    </div>
+                                {% endfor %}
+                                <div class="form-text">От 3 до 20 символов</div>
+                            </div>
+                            
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-envelope me-1"></i>Email адрес
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-envelope text-muted"></i>
+                                    </span>
+                                    {{ form.email(class="form-control border-start-0 ps-0", placeholder="example@email.com") }}
+                                </div>
+                                {% for error in form.email.errors %}
+                                    <div class="text-danger small mt-1 d-flex align-items-center">
+                                        <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Пароль -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-key me-1"></i>Пароль
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-lock text-muted"></i>
+                                    </span>
+                                    {{ form.password(class="form-control border-start-0 ps-0", placeholder="Создайте пароль", id="password") }}
+                                    <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePassword">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                {% for error in form.password.errors %}
+                                    <div class="text-danger small mt-1 d-flex align-items-center">
+                                        <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    </div>
+                                {% endfor %}
+                                <div class="password-strength mt-2">
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar" id="passwordStrength" style="width: 0%"></div>
+                                    </div>
+                                    <small class="text-muted" id="passwordHint">Введите пароль</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Подтверждение пароля -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">
+                                    <i class="bi bi-key-fill me-1"></i>Подтверждение пароля
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-lock-fill text-muted"></i>
+                                    </span>
+                                    {{ form.confirm_password(class="form-control border-start-0 ps-0", placeholder="Повторите пароль", id="confirmPassword") }}
+                                </div>
+                                {% for error in form.confirm_password.errors %}
+                                    <div class="text-danger small mt-1 d-flex align-items-center">
+                                        <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                    </div>
+                                {% endfor %}
+                                <div class="form-check form-check-inline mt-2">
+                                    <input class="form-check-input" type="checkbox" id="showMismatch">
+                                    <label class="form-check-label text-muted small" for="showMismatch">
+                                        Показать несоответствие
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            {{ form.email.label(class="form-label") }}
-                            {{ form.email(class="form-control") }}
-                            {% for error in form.email.errors %}
-                                <div class="text-danger">{{ error }}</div>
-                            {% endfor %}
+                        
+                        <!-- Условия использования -->
+                        <div class="my-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <label class="form-check-label text-muted" for="terms">
+                                    Я соглашаюсь с 
+                                    <a href="#" class="text-decoration-none">Условиями использования</a> 
+                                    и 
+                                    <a href="#" class="text-decoration-none">Политикой конфиденциальности</a>
+                                </label>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            {{ form.password.label(class="form-label") }}
-                            {{ form.password(class="form-control") }}
-                            {% for error in form.password.errors %}
-                                <div class="text-danger">{{ error }}</div>
-                            {% endfor %}
+                        
+                        <!-- Кнопка регистрации -->
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-person-plus me-2"></i>Зарегистрироваться
+                            </button>
                         </div>
-                        <div class="mb-3">
-                            {{ form.confirm_password.label(class="form-label") }}
-                            {{ form.confirm_password(class="form-control") }}
-                            {% for error in form.confirm_password.errors %}
-                                <div class="text-danger">{{ error }}</div>
-                            {% endfor %}
+                        
+                        <!-- Разделитель -->
+                        <div class="position-relative my-4">
+                            <hr class="my-4">
+                            <div class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted">
+                                или
+                            </div>
                         </div>
-                        <div class="d-grid gap-2">
-                            {{ form.submit(class="btn btn-primary") }}
+                        
+                        <!-- Альтернативная регистрация -->
+                        <div class="mb-4">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-secondary">
+                                    <i class="bi bi-google me-2"></i>Продолжить с Google
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary">
+                                    <i class="bi bi-github me-2"></i>Продолжить с GitHub
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Ссылка на вход -->
+                        <div class="text-center">
+                            <p class="text-muted mb-0">
+                                Уже есть аккаунт?
+                                <a href="{{ url_for('main.login') }}" class="text-decoration-none fw-semibold text-primary">
+                                    Войти
+                                </a>
+                            </p>
                         </div>
                     </form>
-                    <p class="mt-3 text-center">Уже есть аккаунт? <a href="{{ url_for('main.login') }}">Войти</a></p>
+                </div>
+            </div>
+            
+            <!-- Преимущества -->
+            <div class="row mt-4 g-3">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-3">
+                            <i class="bi bi-journal-text text-primary fs-4 mb-2"></i>
+                            <h6 class="fw-bold mb-2">Создавайте блоги</h6>
+                            <p class="text-muted small mb-0">Делитесь своими мыслями и идеями</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-3">
+                            <i class="bi bi-people text-success fs-4 mb-2"></i>
+                            <h6 class="fw-bold mb-2">Сообщество</h6>
+                            <p class="text-muted small mb-0">Общайтесь с единомышленниками</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body text-center p-3">
+                            <i class="bi bi-shield-check text-warning fs-4 mb-2"></i>
+                            <h6 class="fw-bold mb-2">Безопасность</h6>
+                            <p class="text-muted small mb-0">Ваши данные защищены</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .form-control:focus {
+        box-shadow: none;
+    }
+    
+    .password-strength .progress {
+        background-color: #e9ecef;
+    }
+    
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 2rem !important;
+        }
+        
+        .btn-lg {
+            padding: 0.75rem 1.5rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .card-body {
+            padding: 1.5rem !important;
+        }
+        
+        .btn-lg {
+            padding: 0.6rem 1.25rem;
+            font-size: 1rem;
+        }
+        
+        .col-md-6, .col-md-4 {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Элементы формы
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirmPassword');
+        const togglePassword = document.getElementById('togglePassword');
+        const showMismatch = document.getElementById('showMismatch');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordHint = document.getElementById('passwordHint');
+        
+        // Переключение видимости пароля
+        if (togglePassword && password) {
+            togglePassword.addEventListener('click', function() {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                this.innerHTML = type === 'password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
+            });
+        }
+        
+        // Проверка силы пароля
+        if (password) {
+            password.addEventListener('input', function() {
+                const pass = this.value;
+                let strength = 0;
+                let hint = '';
+                let color = '';
+                
+                if (pass.length > 0) strength += 20;
+                if (pass.length >= 8) strength += 20;
+                if (/[A-Z]/.test(pass)) strength += 20;
+                if (/[0-9]/.test(pass)) strength += 20;
+                if (/[^A-Za-z0-9]/.test(pass)) strength += 20;
+                
+                if (strength < 40) {
+                    hint = 'Слабый пароль';
+                    color = '#dc3545';
+                } else if (strength < 80) {
+                    hint = 'Средний пароль';
+                    color = '#ffc107';
+                } else {
+                    hint = 'Сильный пароль';
+                    color = '#198754';
+                }
+                
+                passwordStrength.style.width = strength + '%';
+                passwordStrength.style.backgroundColor = color;
+                passwordHint.textContent = hint;
+                passwordHint.style.color = color;
+            });
+        }
+        
+        // Показать несоответствие паролей
+        if (showMismatch && password && confirmPassword) {
+            showMismatch.addEventListener('change', function() {
+                if (this.checked && password.value !== confirmPassword.value) {
+                    confirmPassword.style.borderColor = '#dc3545';
+                    confirmPassword.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.25)';
+                } else {
+                    confirmPassword.style.borderColor = '';
+                    confirmPassword.style.boxShadow = '';
+                }
+            });
+        }
+        
+        // Проверка совпадения паролей
+        if (password && confirmPassword) {
+            confirmPassword.addEventListener('input', function() {
+                if (password.value !== this.value) {
+                    this.style.borderColor = '#dc3545';
+                } else {
+                    this.style.borderColor = '#198754';
+                }
+            });
+        }
+        
+        // Автофокус на первое поле
+        const usernameField = document.querySelector('input[name="username"]');
+        if (usernameField) {
+            usernameField.focus();
+        }
+    });
+</script>
 {% endblock %}

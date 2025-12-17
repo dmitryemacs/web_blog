@@ -1,31 +1,229 @@
 {% extends 'base.html' %}
+
+{% block title %}Главная | DailyPage{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">Все блоги</h1>
-    {% if blogs %}
-        <div class="row">
-            {% for blog in blogs %}
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="card h-100 shadow-sm border-info">
-                        <div class="card-body d-flex flex-column">
-                            <h5 class="card-title mb-2">
-                                <a href="{{ url_for('main.blog', blog_id=blog.id) }}" class="text-decoration-none text-dark">{{ blog.title }}</a>
-                            </h5>
-                            <p class="card-text flex-grow-1">{{ blog.description }}</p>
-                            <div class="mt-auto">
-                                <small class="text-muted d-block">Автор: **{{ blog.owner.username }}**</small>
-                                <small class="text-muted d-block">Создан: {{ blog.created_at.strftime('%Y-%m-%d') }}</small>
-                                <a href="{{ url_for('main.blog', blog_id=blog.id) }}" class="btn btn-sm btn-outline-primary mt-2">Перейти к блогу</a>
+<div class="fade-in">
+    <!-- Герой-секция -->
+    <div class="hero-section text-center py-5 mb-5 rounded-4" 
+         style="background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);">
+        <div class="container py-5">
+            <h1 class="display-4 fw-bold text-white mb-3">
+                Добро пожаловать в DailyPage
+            </h1>
+            <p class="lead text-white opacity-90 mb-4">
+                Платформа для творчества, самовыражения и обмена идеями. Создавайте блоги, делитесь историями, находите единомышленников.
+            </p>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.new_blog') }}" class="btn btn-light btn-lg px-4 py-3 hover-lift">
+                        <i class="bi bi-plus-circle me-2"></i>Создать блог
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('main.register') }}" class="btn btn-light btn-lg px-4 py-3 hover-lift">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Начать бесплатно
+                    </a>
+                    <a href="{{ url_for('main.login') }}" class="btn btn-outline-light btn-lg px-4 py-3 hover-lift">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Войти
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-5 g-4">
+        <div class="col-md-4">
+            <div class="card text-center h-100 border-0 hover-lift">
+                <div class="card-body py-4">
+                    <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 80px; height: 80px;">
+                        <i class="bi bi-journals text-primary" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="h2 fw-bold gradient-text">{{ blogs|length|default(0) }}</h3>
+                    <p class="text-muted">Активных блогов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center h-100 border-0 hover-lift">
+                <div class="card-body py-4">
+                    <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 80px; height: 80px;">
+                        <i class="bi bi-people text-success" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="h2 fw-bold gradient-text">{{ users_count|default(0) }}</h3>
+                    <p class="text-muted">Активных авторов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center h-100 border-0 hover-lift">
+                <div class="card-body py-4">
+                    <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                         style="width: 80px; height: 80px;">
+                        <i class="bi bi-chat-dots text-warning" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="h2 fw-bold gradient-text">{{ posts_count|default(0) }}</h3>
+                    <p class="text-muted">Всего постов</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список блогов -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold">
+                <i class="bi bi-journals me-2"></i>Все блоги
+            </h2>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.new_blog') }}" class="btn btn-primary d-flex align-items-center">
+                    <i class="bi bi-plus-lg me-2"></i>Новый блог
+                </a>
+            {% endif %}
+        </div>
+        
+        {% if blogs %}
+            <div class="row g-4">
+                {% for blog in blogs %}
+                    <div class="col-xl-4 col-lg-6 col-md-6">
+                        <div class="card h-100 hover-lift border-0 shadow-sm">
+                            <div class="card-body d-flex flex-column p-4">
+                                <!-- Заголовок и автор -->
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title mb-1">
+                                            <a href="{{ url_for('main.blog', blog_id=blog.id) }}" 
+                                               class="text-decoration-none text-dark fw-bold">
+                                                {{ blog.title }}
+                                            </a>
+                                        </h5>
+                                        <div class="d-flex align-items-center text-muted small">
+                                            <i class="bi bi-person-circle me-1"></i>
+                                            <span>{{ blog.owner.username }}</span>
+                                            <span class="mx-2">•</span>
+                                            <i class="bi bi-calendar me-1"></i>
+                                            <span>{{ blog.created_at.strftime('%d.%m.%Y') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Описание -->
+                                <p class="card-text text-muted mb-4 flex-grow-1">
+                                    {{ blog.description|truncate(120) }}
+                                </p>
+                                
+                                <!-- Статистика -->
+                                <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
+                                    <div class="d-flex gap-3">
+                                        <span class="text-muted small">
+                                            <i class="bi bi-file-text me-1"></i>{{ blog.posts|length }} постов
+                                        </span>
+                                        <span class="text-muted small">
+                                            <i class="bi bi-chat me-1"></i>{{ blog.total_comments|default(0) }} комм.
+                                        </span>
+                                    </div>
+                                    <a href="{{ url_for('main.blog', blog_id=blog.id) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        Читать
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Пустой стейт -->
+            <div class="text-center py-5 my-5">
+                <div class="mb-4">
+                    <i class="bi bi-journal-x display-1 text-muted opacity-50"></i>
                 </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="alert alert-info" role="alert">
-            Пока нет блогов. <a href="{{ url_for('main.new_blog') }}">Создайте первый!</a>
-        </div>
-    {% endif %}
+                <h3 class="mb-3">Пока нет блогов</h3>
+                <p class="text-muted mb-4">Будьте первым, кто создаст свой блог и поделится историями!</p>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.new_blog') }}" class="btn btn-primary btn-lg px-4">
+                        <i class="bi bi-plus-circle me-2"></i>Создать первый блог
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('main.register') }}" class="btn btn-primary btn-lg px-4">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Присоединиться
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
 </div>
+
+<style>
+    .hero-section {
+        position: relative;
+        overflow: hidden;
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+    }
+    
+    .hero-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+        opacity: 0.3;
+    }
+    
+    @media (max-width: 768px) {
+        .hero-section {
+            margin-left: -0.5rem;
+            margin-right: -0.5rem;
+            border-radius: 0 !important;
+        }
+        
+        .hero-section .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        
+        .display-4 {
+            font-size: 2rem;
+        }
+        
+        .btn-lg {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+        }
+        
+        .h2 {
+            font-size: 1.75rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .hero-section {
+            margin-left: -0.25rem;
+            margin-right: -0.25rem;
+        }
+        
+        .hero-section .container {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        
+        .display-4 {
+            font-size: 1.75rem;
+        }
+        
+        .lead {
+            font-size: 1rem;
+        }
+        
+        .btn-lg {
+            padding: 0.6rem 1.25rem;
+            font-size: 0.9rem;
+        }
+    }
+</style>
 {% endblock %}

@@ -1,353 +1,454 @@
 {% extends "base.html" %}
+{% block title %}{{ post.title }} | DailyPage{% endblock %}
 
-{% block title %}{{ post.title }}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            
-            <!-- Хлебные крошки -->
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Главная</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('main.blog', blog_id=post.blog.id) }}">{{ post.blog.title }}</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ post.title|truncate(30) }}</li>
-                </ol>
-            </nav>
+<div class="fade-in">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.index') }}" class="text-decoration-none">
+                    <i class="bi bi-house-door"></i>
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('main.blog', blog_id=post.blog.id) }}" class="text-decoration-none">
+                    {{ post.blog.title|truncate(20) }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page" title="{{ post.title }}">
+                {{ post.title|truncate(30) }}
+            </li>
+        </ol>
+    </nav>
 
-            <!-- Пост -->
-            <article class="card shadow-lg mb-5 border-0">
-                <div class="card-body p-4">
-                    
-                    <!-- Заголовок и мета-информация -->
-                    <div class="mb-4">
-                        <h1 class="card-title display-6 mb-2 text-primary">{{ post.title }}</h1>
-                        <div class="d-flex flex-wrap align-items-center text-muted mb-3">
-                            <div class="me-3">
-                                <i class="bi bi-person-circle me-1"></i>
-                                <a href="#" class="text-decoration-none text-muted">{{ post.blog.owner.username }}</a>
-                            </div>
-                            <div class="me-3">
-                                <i class="bi bi-calendar me-1"></i>
-                                {{ post.created_at.strftime('%d.%m.%Y %H:%M') }}
-                            </div>
-                            <div>
-                                <i class="bi bi-chat-text me-1"></i>
-                                {{ comments|length }} комментариев
-                            </div>
+    <!-- Пост -->
+    <article class="card border-0 shadow-lg mb-4">
+        <div class="card-body p-4">
+            <!-- Заголовок и мета-информация -->
+            <div class="mb-4">
+                <h1 class="card-title display-6 fw-bold mb-3 gradient-text">{{ post.title }}</h1>
+
+                <div class="d-flex flex-wrap align-items-center gap-3 text-muted mb-4">
+                    <!-- Автор -->
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-2"
+                             style="width: 40px; height: 40px;">
+                            <i class="bi bi-person text-primary"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold">{{ post.blog.owner.username }}</div>
+                            <small class="text-muted">Автор блога</small>
                         </div>
                     </div>
 
-                    <!-- Содержимое поста -->
-                    <div class="post-content mb-5 fs-5">
-                        {{ post.content|nl2br|safe }}
-                    </div>
-
-                    <!-- Прикрепленные файлы -->
-                    {% if post.attachments %}
-                    <div class="mb-5">
-                        <h5 class="mb-3 border-bottom pb-2">
-                            <i class="bi bi-paperclip me-2"></i>Прикрепленные файлы ({{ post.attachments|length }})
-                        </h5>
-                        <div class="row g-3">
-                            {% for attachment in post.attachments %}
-                            <div class="col-md-6 col-lg-4">
-                                <div class="card border h-100">
-                                    <div class="card-body d-flex flex-column">
-                                        <div class="d-flex align-items-start mb-2">
-                                            <div class="me-3">
-                                                {% if attachment.file_type == 'image' %}
-                                                    <i class="bi bi-image text-primary" style="font-size: 1.5rem;"></i>
-                                                {% elif attachment.file_type == 'video' %}
-                                                    <i class="bi bi-film text-danger" style="font-size: 1.5rem;"></i>
-                                                {% elif attachment.file_type == 'audio' %}
-                                                    <i class="bi bi-music-note-beamed text-success" style="font-size: 1.5rem;"></i>
-                                                {% elif attachment.file_type == 'document' %}
-                                                    <i class="bi bi-file-earmark-text text-warning" style="font-size: 1.5rem;"></i>
-                                                {% else %}
-                                                    <i class="bi bi-file-earmark text-secondary" style="font-size: 1.5rem;"></i>
-                                                {% endif %}
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <h6 class="card-title mb-1 text-truncate" title="{{ attachment.original_filename }}">
-                                                    {{ attachment.original_filename }}
-                                                </h6>
-                                                <small class="text-muted">
-                                                    {{ attachment.file_type|title }} • {{ attachment.mimetype }}
-                                                </small>
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="mt-auto pt-2 border-top">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                {% set file_path = url_for('static', filename='uploads/' + attachment.filename) %}
-                                                
-                                                <!-- Предпросмотр для изображений -->
-                                                {% if attachment.file_type == 'image' %}
-                                                <div class="text-center mb-2">
-                                                    <img src="{{ file_path }}" 
-                                                         alt="{{ attachment.original_filename }}" 
-                                                         class="img-fluid rounded shadow-sm mb-2" 
-                                                         style="max-height: 200px; object-fit: contain;">
-                                                </div>
-                                                {% endif %}
-                                                
-                                                <!-- Кнопки действий -->
-                                                <div class="d-flex gap-2">
-                                                    <a href="{{ file_path }}" 
-                                                       target="_blank" 
-                                                       class="btn btn-sm btn-outline-primary flex-fill"
-                                                       title="Скачать">
-                                                        <i class="bi bi-download"></i>
-                                                    </a>
-                                                    
-                                                    {% if attachment.file_type == 'image' %}
-                                                    <a href="{{ file_path }}" 
-                                                       data-fancybox="gallery" 
-                                                       data-caption="{{ attachment.original_filename }}"
-                                                       class="btn btn-sm btn-outline-info"
-                                                       title="Увеличить">
-                                                        <i class="bi bi-zoom-in"></i>
-                                                    </a>
-                                                    {% endif %}
-                                                    
-                                                    {% if attachment.file_type == 'audio' %}
-                                                    <audio controls class="w-100 mt-2">
-                                                        <source src="{{ file_path }}" type="{{ attachment.mimetype }}">
-                                                        Ваш браузер не поддерживает аудио.
-                                                    </audio>
-                                                    {% elif attachment.file_type == 'video' %}
-                                                    <video controls class="w-100 mt-2" style="max-height: 200px;">
-                                                        <source src="{{ file_path }}" type="{{ attachment.mimetype }}">
-                                                        Ваш браузер не поддерживает видео.
-                                                    </video>
-                                                    {% endif %}
-                                                    
-                                                    {% if current_user.is_authenticated and (post.blog.owner == current_user or current_user.role == 'admin') %}
-                                                    <form method="POST" 
-                                                          action="{{ url_for('main.delete_attachment', attachment_id=attachment.id) }}" 
-                                                          class="d-inline"
-                                                          onsubmit="return confirm('Удалить это вложение?');">
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
+                    <!-- Дата -->
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-calendar3 me-2"></i>
+                        <div>
+                            <div class="fw-semibold">{{ post.created_at.strftime('%d.%m.%Y') }}</div>
+                            <small class="text-muted">{{ post.created_at.strftime('%H:%M') }}</small>
                         </div>
                     </div>
-                    {% endif %}
 
-                    <!-- Теги (если есть) -->
-                    {% if post.tags %}
-                    <div class="mb-4">
-                        <h6 class="mb-2"><i class="bi bi-tags me-1"></i>Теги:</h6>
-                        <div class="d-flex flex-wrap gap-2">
-                            {% for tag in post.tags %}
-                            <span class="badge bg-secondary bg-opacity-25 text-dark border">
-                                <i class="bi bi-tag me-1"></i>{{ tag.name }}
-                            </span>
-                            {% endfor %}
+                    <!-- Статистика -->
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-chat-text me-2"></i>
+                        <div>
+                            <div class="fw-semibold">{{ comments|length }}</div>
+                            <small class="text-muted">комментариев</small>
                         </div>
                     </div>
-                    {% endif %}
 
-                    <!-- Действия с постом -->
-                    <div class="d-flex flex-wrap justify-content-between align-items-center border-top border-bottom py-3 mb-4">
-                        <!-- Лайки -->
-                        <div class="d-flex align-items-center">
-                            <span class="badge bg-light text-dark border me-3">
-                                <i class="bi bi-heart-fill text-danger me-1"></i>{{ like_count }} лайков
-                            </span>
-                            
-                            {% if current_user.is_authenticated %}
-                            <form method="POST" action="{{ url_for('main.like_post', post_id=post.id) }}" class="d-inline">
-                                <button type="submit" class="btn btn-sm {% if is_liked %}btn-danger{% else %}btn-outline-danger{% endif %}">
-                                    {% if is_liked %}
-                                        <i class="bi bi-heart-fill me-1"></i>Убрать лайк
-                                    {% else %}
-                                        <i class="bi bi-heart me-1"></i>Лайкнуть
-                                    {% endif %}
-                                </button>
-                            </form>
-                            {% else %}
-                            <a href="{{ url_for('main.login', next=request.url) }}" class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-heart me-1"></i>Лайкнуть
-                            </a>
-                            {% endif %}
+                    <!-- Время чтения -->
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-clock me-2"></i>
+                        <div>
+                            <div class="fw-semibold">{{ post.read_time }}</div>
+                            <small class="text-muted">мин. чтения</small>
                         </div>
-
-                        <!-- Кнопки редактирования/удаления -->
-                        {% if current_user.is_authenticated and post.blog.owner == current_user %}
-                        <div class="mt-2 mt-md-0">
-                            <div class="btn-group" role="group">
-                                <a href="{{ url_for('main.edit_post', post_id=post.id) }}" 
-                                   class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-pencil me-1"></i>Редактировать
-                                </a>
-                                
-                                <button type="button" 
-                                        class="btn btn-outline-danger btn-sm" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#deletePostModal">
-                                    <i class="bi bi-trash me-1"></i>Удалить
-                                </button>
-                            </div>
-                        </div>
-                        {% endif %}
                     </div>
-
-                    <!-- Навигация между постами -->
-                    {% set prev_post = post.blog.posts|selectattr('id', 'lt', post.id)|first %}
-                    {% set next_post = post.blog.posts|selectattr('id', 'gt', post.id)|first %}
-                    
-                    {% if prev_post or next_post %}
-                    <div class="d-flex justify-content-between mb-5">
-                        {% if prev_post %}
-                        <a href="{{ url_for('main.post', post_id=prev_post.id) }}" 
-                           class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-chevron-left me-1"></i>Предыдущий пост
-                        </a>
-                        {% else %}
-                        <span></span>
-                        {% endif %}
-                        
-                        {% if next_post %}
-                        <a href="{{ url_for('main.post', post_id=next_post.id) }}" 
-                           class="btn btn-outline-secondary btn-sm">
-                            Следующий пост<i class="bi bi-chevron-right ms-1"></i>
-                        </a>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-
                 </div>
-            </article>
+            </div>
 
-            <!-- Комментарии -->
-            <section class="card shadow-sm border-0 mb-5">
-                <div class="card-body p-4">
-                    <h3 class="card-title mb-4">
-                        <i class="bi bi-chat-left-text me-2"></i>Комментарии ({{ comments|length }})
-                    </h3>
+            <!-- Содержимое поста -->
+            <div class="post-content mb-5 fs-5">
+                {{ post.content|nl2br|safe }}
+            </div>
 
-                    <!-- Форма добавления комментария -->
-                    {% if current_user.is_authenticated %}
-                    <div class="card mb-4 border">
-                        <div class="card-body">
-                            <form method="POST" action="">
-                                {{ form.hidden_tag() }}
-                                <div class="mb-3">
-                                    <label class="form-label">Добавить комментарий как <strong>{{ current_user.username }}</strong></label>
-                                    {{ form.content(class="form-control", rows="4", placeholder="Ваш комментарий...") }}
-                                    {% for error in form.content.errors %}
-                                    <div class="text-danger small mt-1">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                                <div class="d-flex justify-content-end">
-                                    {{ form.submit(class="btn btn-primary") }}
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="alert alert-info mb-4">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <a href="{{ url_for('main.login', next=request.url) }}" class="alert-link">Войдите</a>, чтобы оставить комментарий.
-                    </div>
-                    {% endif %}
+            <!-- Теги -->
+            {% if post.tags %}
+            <div class="mb-5">
+                <h6 class="fw-semibold mb-3 d-flex align-items-center">
+                    <i class="bi bi-tags me-2"></i>Теги
+                </h6>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for tag in post.tags %}
+                    <a href="#" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none border-0 py-2 px-3">
+                        <i class="bi bi-tag me-1"></i>{{ tag.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
 
-                    <!-- Список комментариев -->
-                    <div class="comments-list">
-                        {% if comments %}
-                            {% for comment in comments %}
-                            <div class="comment-item mb-4 pb-3 border-bottom" id="comment-{{ comment.id }}">
-                                <div class="d-flex">
-                                    <!-- Аватар -->
-                                    <div class="flex-shrink-0 me-3">
-                                        <div class="rounded-circle bg-secondary bg-opacity-25 d-flex align-items-center justify-content-center" 
-                                             style="width: 50px; height: 50px;">
-                                            <i class="bi bi-person text-secondary" style="font-size: 1.5rem;"></i>
-                                        </div>
+            <!-- Прикрепленные файлы -->
+            {% if post.attachments %}
+            <div class="mb-5">
+                <h5 class="fw-semibold mb-3 d-flex align-items-center border-bottom pb-3">
+                    <i class="bi bi-paperclip me-2"></i>Прикрепленные файлы ({{ post.attachments|length }})
+                </h5>
+                <div class="row g-4">
+                    {% for attachment in post.attachments %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card border h-100 hover-lift">
+                            <div class="card-body d-flex flex-column p-3">
+                                <!-- Иконка и название -->
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="me-3">
+                                        {% if attachment.file_type == 'image' %}
+                                            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+                                                 style="width: 48px; height: 48px;">
+                                                <i class="bi bi-image text-primary" style="font-size: 1.5rem;"></i>
+                                            </div>
+                                        {% elif attachment.file_type == 'video' %}
+                                            <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center"
+                                                 style="width: 48px; height: 48px;">
+                                                <i class="bi bi-film text-danger" style="font-size: 1.5rem;"></i>
+                                            </div>
+                                        {% elif attachment.file_type == 'audio' %}
+                                            <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center"
+                                                 style="width: 48px; height: 48px;">
+                                                <i class="bi bi-music-note-beamed text-success" style="font-size: 1.5rem;"></i>
+                                            </div>
+                                        {% elif attachment.file_type == 'document' %}
+                                            <div class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center"
+                                                 style="width: 48px; height: 48px;">
+                                                <i class="bi bi-file-earmark-text text-warning" style="font-size: 1.5rem;"></i>
+                                            </div>
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center"
+                                                 style="width: 48px; height: 48px;">
+                                                <i class="bi bi-file-earmark text-secondary" style="font-size: 1.5rem;"></i>
+                                            </div>
+                                        {% endif %}
                                     </div>
-                                    
-                                    <!-- Содержимое комментария -->
                                     <div class="flex-grow-1">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <div>
-                                                <strong class="text-primary">{{ comment.author.username }}</strong>
-                                                <small class="text-muted ms-2">
-                                                    <i class="bi bi-clock me-1"></i>{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}
-                                                </small>
-                                            </div>
-                                            
-                                            <!-- Удаление комментария -->
-                                            {% if current_user.is_authenticated and 
-                                                  (current_user == comment.author or 
-                                                   current_user == comment.post.blog.owner or 
-                                                   current_user.role == 'admin') %}
-                                            <form method="POST" 
-                                                  action="{{ url_for('main.delete_comment', comment_id=comment.id) }}"
-                                                  onsubmit="return confirm('Удалить этот комментарий?');"
-                                                  class="d-inline">
-                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Удалить">
-                                                    <i class="bi bi-x-lg"></i>
-                                                </button>
-                                            </form>
-                                            {% endif %}
-                                        </div>
-                                        
-                                        <div class="comment-content mb-2">
-                                            {{ comment.content|nl2br|safe }}
-                                        </div>
-                                        
-                                        <!-- Ответить (можно добавить позже) -->
-                                        {# <button class="btn btn-sm btn-outline-secondary">Ответить</button> #}
+                                        <h6 class="card-title mb-1 text-truncate" title="{{ attachment.original_filename }}">
+                                            {{ attachment.original_filename }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            {{ attachment.file_type|title }} • {{ attachment.mimetype }}
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <!-- Предпросмотр -->
+                                {% set file_path = url_for('static', filename='uploads/' + attachment.filename) %}
+                                {% if attachment.file_type == 'image' %}
+                                <div class="text-center mb-3">
+                                    <a href="{{ file_path }}"
+                                       data-fancybox="gallery"
+                                       data-caption="{{ attachment.original_filename }}">
+                                        <img src="{{ file_path }}"
+                                             alt="{{ attachment.original_filename }}"
+                                             class="img-fluid rounded shadow-sm"
+                                             style="max-height: 150px; object-fit: contain; cursor: zoom-in;">
+                                    </a>
+                                </div>
+                                {% endif %}
+
+                                <!-- Плееры -->
+                                {% if attachment.file_type == 'audio' %}
+                                <div class="mb-3">
+                                    <audio controls class="w-100">
+                                        <source src="{{ file_path }}" type="{{ attachment.mimetype }}">
+                                        Ваш браузер не поддерживает аудио.
+                                    </audio>
+                                </div>
+                                {% elif attachment.file_type == 'video' %}
+                                <div class="mb-3">
+                                    <video controls class="w-100 rounded" style="max-height: 200px;">
+                                        <source src="{{ file_path }}" type="{{ attachment.mimetype }}">
+                                        Ваш браузер не поддерживает видео.
+                                    </video>
+                                </div>
+                                {% endif %}
+
+                                <!-- Кнопки действий -->
+                                <div class="mt-auto pt-3 border-top">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <a href="{{ file_path }}"
+                                           target="_blank"
+                                           class="btn btn-outline-primary btn-sm d-flex align-items-center"
+                                           title="Скачать">
+                                            <i class="bi bi-download me-1"></i>Скачать
+                                        </a>
+
+                                        {% if current_user.is_authenticated and (post.blog.owner == current_user or current_user.role == 'admin') %}
+                                        <form method="POST"
+                                              action="{{ url_for('main.delete_attachment', attachment_id=attachment.id) }}"
+                                              class="d-inline">
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm d-flex align-items-center"
+                                                    title="Удалить"
+                                                    onclick="return confirm('Удалить это вложение?');">
+                                                <i class="bi bi-trash me-1"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="text-center py-4">
-                                <i class="bi bi-chat-square-text display-4 text-muted mb-3"></i>
-                                <p class="text-muted">Пока нет комментариев. Будьте первым!</p>
-                            </div>
-                        {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Действия с постом -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center border-top border-bottom py-4 mb-4">
+                <!-- Лайки -->
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <span class="badge bg-light text-dark border py-2 px-3">
+                            <i class="bi bi-heart-fill text-danger me-1"></i>{{ like_count }} лайков
+                        </span>
+                    </div>
+
+                    {% if current_user.is_authenticated %}
+                    <form method="POST" action="{{ url_for('main.like_post', post_id=post.id) }}" class="d-inline">
+                        <button type="submit" class="btn {% if is_liked %}btn-danger{% else %}btn-outline-danger{% endif %} d-flex align-items-center">
+                            {% if is_liked %}
+                                <i class="bi bi-heart-fill me-2"></i>Убрать лайк
+                            {% else %}
+                                <i class="bi bi-heart me-2"></i>Лайкнуть
+                            {% endif %}
+                        </button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url_for('main.login', next=request.url) }}" class="btn btn-outline-danger d-flex align-items-center">
+                        <i class="bi bi-heart me-2"></i>Лайкнуть
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Кнопки редактирования/удаления -->
+                {% if current_user.is_authenticated and post.blog.owner == current_user %}
+                <div class="mt-3 mt-md-0">
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('main.edit_post', post_id=post.id) }}"
+                           class="btn btn-outline-primary d-flex align-items-center">
+                            <i class="bi bi-pencil me-2"></i>Редактировать
+                        </a>
+
+                        <button type="button"
+                                class="btn btn-outline-danger d-flex align-items-center"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deletePostModal">
+                            <i class="bi bi-trash me-2"></i>Удалить
+                        </button>
                     </div>
                 </div>
-            </section>
+                {% endif %}
+            </div>
 
+            <!-- Навигация между постами -->
+            {% set prev_post = post.blog.posts|selectattr('id', 'lt', post.id)|first %}
+            {% set next_post = post.blog.posts|selectattr('id', 'gt', post.id)|first %}
+
+            {% if prev_post or next_post %}
+            <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-5">
+                {% if prev_post %}
+                <a href="{{ url_for('main.post', post_id=prev_post.id) }}"
+                   class="btn btn-outline-secondary d-flex align-items-center justify-content-between py-3 px-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-chevron-left me-3"></i>
+                        <div class="text-start">
+                            <small class="text-muted d-block">Предыдущий пост</small>
+                            <span class="fw-semibold">{{ prev_post.title|truncate(30) }}</span>
+                        </div>
+                    </div>
+                </a>
+                {% else %}
+                <span></span>
+                {% endif %}
+
+                {% if next_post %}
+                <a href="{{ url_for('main.post', post_id=next_post.id) }}"
+                   class="btn btn-outline-secondary d-flex align-items-center justify-content-between py-3 px-4">
+                    <div class="d-flex align-items-center">
+                        <div class="text-end">
+                            <small class="text-muted d-block">Следующий пост</small>
+                            <span class="fw-semibold">{{ next_post.title|truncate(30) }}</span>
+                        </div>
+                        <i class="bi bi-chevron-right ms-3"></i>
+                    </div>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
-    </div>
+    </article>
+
+    <!-- Комментарии -->
+    <section class="card border-0 shadow-sm mb-5">
+        <div class="card-body p-4">
+            <h3 class="card-title mb-4 d-flex align-items-center">
+                <i class="bi bi-chat-left-text me-2"></i>Комментарии ({{ comments|length }})
+            </h3>
+
+            <!-- Форма добавления комментария -->
+            {% if current_user.is_authenticated %}
+            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, rgba(67, 97, 238, 0.03) 0%, rgba(76, 201, 240, 0.03) 100%);">
+                <div class="card-body">
+                    <form method="POST" action="">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold mb-3">
+                                <i class="bi bi-pencil-square me-2"></i>
+                                Добавить комментарий как <span class="text-primary">{{ current_user.username }}</span>
+                            </label>
+                            {{ form.content(class="form-control", rows="4", placeholder="Напишите ваш комментарий здесь...") }}
+                            {% for error in form.content.errors %}
+                            <div class="text-danger small mt-1 d-flex align-items-center">
+                                <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary d-flex align-items-center">
+                                <i class="bi bi-send me-2"></i>Отправить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info border-0 mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-info-circle me-3 fs-4"></i>
+                    <div>
+                        <h6 class="alert-heading mb-1">Хотите прокомментировать?</h6>
+                        <p class="mb-0">
+                            <a href="{{ url_for('main.login', next=request.url) }}" class="alert-link">Войдите</a>
+                            или <a href="{{ url_for('main.register') }}" class="alert-link">зарегистрируйтесь</a>,
+                            чтобы оставить комментарий.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Список комментариев -->
+            <div class="comments-list">
+                {% if comments %}
+                    {% for comment in comments %}
+                    <div class="comment-item mb-4 pb-3 border-bottom" id="comment-{{ comment.id }}">
+                        <div class="d-flex">
+                            <!-- Аватар -->
+                            <div class="flex-shrink-0 me-3">
+                                <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center"
+                                     style="width: 50px; height: 50px;">
+                                    <i class="bi bi-person text-primary" style="font-size: 1.5rem;"></i>
+                                </div>
+                            </div>
+
+                            <!-- Содержимое комментария -->
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <strong class="text-primary">{{ comment.author.username }}</strong>
+                                        <small class="text-muted ms-2">
+                                            <i class="bi bi-clock me-1"></i>{{ comment.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                        </small>
+                                    </div>
+
+                                    <!-- Удаление комментария -->
+                                    {% if current_user.is_authenticated and
+                                          (current_user == comment.author or
+                                           current_user == comment.post.blog.owner or
+                                           current_user.role == 'admin') %}
+                                    <form method="POST"
+                                          action="{{ url_for('main.delete_comment', comment_id=comment.id) }}"
+                                          class="d-inline">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-link text-danger p-0 d-flex align-items-center"
+                                                title="Удалить"
+                                                onclick="return confirm('Удалить этот комментарий?');">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+
+                                <div class="comment-content mb-2 fs-6">
+                                    {{ comment.content|nl2br|safe }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- Пустой стейт для комментариев -->
+                    <div class="text-center py-5 my-4">
+                        <div class="mb-3">
+                            <i class="bi bi-chat-square-text display-1 text-muted opacity-50"></i>
+                        </div>
+                        <h4 class="text-muted mb-2">Пока нет комментариев</h4>
+                        <p class="text-muted mb-3">Будьте первым, кто поделится своим мнением!</p>
+                        {% if not current_user.is_authenticated %}
+                        <a href="{{ url_for('main.login', next=request.url) }}" class="btn btn-outline-primary">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Войти, чтобы прокомментировать
+                        </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
 </div>
 
 <!-- Модальное окно подтверждения удаления поста -->
 {% if current_user.is_authenticated and post.blog.owner == current_user %}
 <div class="modal fade" id="deletePostModal" tabindex="-1" aria-labelledby="deletePostModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deletePostModalLabel">Подтверждение удаления</h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger" id="deletePostModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Удаление поста
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    Вы уверены, что хотите удалить пост <strong>"{{ post.title }}"</strong>?
+                <div class="alert alert-danger border-0 mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-octagon-fill me-3 fs-4"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">Внимание!</h6>
+                            <p class="mb-0">Это действие нельзя отменить.</p>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-muted">Это действие нельзя отменить. Все комментарии и вложения также будут удалены.</p>
+
+                <p class="mb-3">Вы уверены, что хотите удалить пост <strong>"{{ post.title }}"</strong>?</p>
+
+                <div class="alert alert-warning border-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <small>Все комментарии и вложения этого поста также будут удалены.</small>
+                </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer border-0">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
                 <form method="POST" action="{{ url_for('main.delete_post', post_id=post.id) }}">
-                    <button type="submit" class="btn btn-danger">Удалить пост</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Удалить пост
+                    </button>
                 </form>
             </div>
         </div>
@@ -355,79 +456,69 @@
 </div>
 {% endif %}
 
-<!-- Подключение Fancybox для изображений -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
 <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
 <script>
-    // Инициализация Fancybox
+    // Инициализация Fancybox для галереи
     Fancybox.bind("[data-fancybox]", {
-        // Опции можно настроить здесь
+        Toolbar: {
+            display: {
+                left: [],
+                middle: [],
+                right: ["close"],
+            },
+        },
+        Thumbs: false,
     });
     
-    // Подсветка нового комментария после отправки
+    // Подсветка нового комментария
     {% if request.args.get('comment') %}
     document.addEventListener('DOMContentLoaded', function() {
         const commentId = {{ request.args.get('comment') }};
         const commentElement = document.getElementById('comment-' + commentId);
         if (commentElement) {
-            commentElement.scrollIntoView({ behavior: 'smooth' });
-            commentElement.style.backgroundColor = '#f8f9fa';
+            commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            commentElement.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
+            commentElement.style.transition = 'background-color 0.5s ease';
+            
             setTimeout(() => {
                 commentElement.style.backgroundColor = '';
-            }, 3000);
+            }, 5000);
         }
     });
     {% endif %}
     
     // Подтверждение удаления
-    function confirmDelete(action, message) {
-        if (confirm(message || 'Вы уверены?')) {
-            return true;
-        }
-        return false;
-    }
+    document.querySelectorAll('form[onsubmit]').forEach(form => {
+        form.onsubmit = function() {
+            return confirm(this.getAttribute('data-confirm') || 'Вы уверены?');
+        };
+    });
 </script>
 
-<!-- Стили для улучшенного отображения -->
 <style>
     .post-content {
         line-height: 1.8;
         font-size: 1.1rem;
+        color: #2c3e50;
     }
     
     .post-content img {
         max-width: 100%;
         height: auto;
-        border-radius: 8px;
-        margin: 1rem 0;
+        border-radius: 12px;
+        margin: 1.5rem 0;
+        box-shadow: var(--shadow-md);
     }
     
-    .comment-content {
-        line-height: 1.6;
-    }
-    
-    .attachment-card {
-        transition: transform 0.2s;
-    }
-    
-    .attachment-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    .comment-item {
-        transition: background-color 0.3s;
-    }
-    
-    /* Стили для кода в тексте */
     .post-content pre {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
-        border-radius: 6px;
-        padding: 1rem;
+        border-radius: 8px;
+        padding: 1.25rem;
         overflow-x: auto;
         font-family: 'Courier New', monospace;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
+        margin: 1.5rem 0;
     }
     
     .post-content code {
@@ -435,16 +526,99 @@
         padding: 0.2rem 0.4rem;
         border-radius: 4px;
         font-family: 'Courier New', monospace;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
     }
     
-    /* Стили для цитат */
     .post-content blockquote {
-        border-left: 4px solid #0d6efd;
-        padding-left: 1rem;
+        border-left: 4px solid var(--primary-color);
+        padding-left: 1.5rem;
         margin-left: 0;
         font-style: italic;
         color: #6c757d;
+        background-color: rgba(13, 110, 253, 0.05);
+        padding: 1rem 1.5rem;
+        border-radius: 0 8px 8px 0;
+        margin: 1.5rem 0;
+    }
+    
+    .comment-content {
+        line-height: 1.6;
+    }
+    
+    .comment-item {
+        transition: all 0.3s ease;
+    }
+    
+    .comment-item:hover {
+        background-color: rgba(0, 0, 0, 0.01);
+    }
+    
+    @media (max-width: 768px) {
+        .post-content {
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+        
+        .display-6 {
+            font-size: 1.75rem;
+        }
+        
+        .card-body {
+            padding: 1.25rem !important;
+        }
+        
+        .btn-group {
+            width: 100%;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+        
+        .d-flex {
+            flex-wrap: wrap;
+        }
+        
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .post-content {
+            font-size: 0.95rem;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .breadcrumb {
+            font-size: 0.875rem;
+        }
+        
+        .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn-group {
+            flex-direction: column;
+        }
+        
+        .btn-group .btn:not(:last-child) {
+            margin-bottom: 0.5rem;
+        }
+        
+        .col-md-6, .col-lg-4 {
+            margin-bottom: 1rem;
+        }
+    }
+    
+    /* Стили для адаптивных видео */
+    video {
+        max-width: 100%;
+        height: auto;
     }
 </style>
 {% endblock %}

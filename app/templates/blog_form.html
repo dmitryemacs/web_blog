@@ -1,34 +1,347 @@
 {% extends "base.html" %}
+{% block title %}{{ title }} | DailyPage{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
+<div class="container mt-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-lg">
-                <div class="card-body">
-                    <h2 class="card-title mb-4 text-center">{{ title }}</h2> {# Передаем заголовок из routes.py #}
+        <div class="col-lg-8">
+            <!-- Хлебные крошки -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('main.index') }}" class="text-decoration-none">
+                            <i class="bi bi-house-door"></i>
+                        </a>
+                    </li>
+                    {% if blog %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('main.blog', blog_id=blog.id) }}" class="text-decoration-none">
+                            {{ blog.title|truncate(20) }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+                </ol>
+            </nav>
+
+            <!-- Форма -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-4 p-md-5">
+                    <h2 class="card-title mb-4 text-center fw-bold">
+                        {% if blog %}
+                            <i class="bi bi-pencil-square me-2"></i>Редактирование блога
+                        {% else %}
+                            <i class="bi bi-plus-square me-2"></i>Создание нового блога
+                        {% endif %}
+                    </h2>
+
                     <form method="POST">
                         {{ form.hidden_tag() }}
-                        <div class="mb-3">
-                            {{ form.title.label(class="form-label") }}
-                            {{ form.title(class="form-control") }}
+
+                        <!-- Название блога -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-journal-text me-1"></i>Название блога
+                            </label>
+                            {{ form.title(class="form-control form-control-lg", placeholder="Введите название блога...") }}
                             {% for error in form.title.errors %}
-                                <div class="text-danger">{{ error }}</div>
+                                <div class="text-danger small mt-1 d-flex align-items-center">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
                             {% endfor %}
+                            <div class="form-text">
+                                Придумайте короткое и запоминающееся название для вашего блога.
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            {{ form.description.label(class="form-label") }}
-                            {{ form.description(class="form-control", rows="5") }}
+
+                        <!-- Описание -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-text-paragraph me-1"></i>Описание блога
+                            </label>
+                            {{ form.description(class="form-control", rows="5", placeholder="Расскажите о вашем блоге...") }}
                             {% for error in form.description.errors %}
-                                <div class="text-danger">{{ error }}</div>
+                                <div class="text-danger small mt-1 d-flex align-items-center">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
                             {% endfor %}
+                            <div class="form-text">
+                                Опишите, о чем будет ваш блог, кто ваша аудитория и какие темы вы планируете освещать.
+                            </div>
                         </div>
-                        <div class="d-grid gap-2">
-                            {{ form.submit(class="btn btn-primary") }}
+
+                        <!-- Категория (опционально) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-grid me-1"></i>Категория (опционально)
+                            </label>
+                            <select class="form-select" name="category">
+                                <option value="">Выберите категорию</option>
+                                <option value="technology">Технологии</option>
+                                <option value="lifestyle">Образ жизни</option>
+                                <option value="education">Образование</option>
+                                <option value="entertainment">Развлечения</option>
+                                <option value="business">Бизнес</option>
+                                <option value="personal">Личное</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+
+                        <!-- Видимость -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-globe me-1"></i>Видимость блога
+                            </label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="visibility" id="visibilityPublic" value="public" checked>
+                                <label class="form-check-label" for="visibilityPublic">
+                                    <i class="bi bi-globe-americas me-1"></i>Публичный
+                                </label>
+                                <small class="text-muted d-block">Блог будет виден всем пользователям</small>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="visibility" id="visibilityPrivate" value="private">
+                                <label class="form-check-label" for="visibilityPrivate">
+                                    <i class="bi bi-lock me-1"></i>Приватный
+                                </label>
+                                <small class="text-muted d-block">Блог будет доступен только вам</small>
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mt-5">
+                            <div>
+                                {% if blog %}
+                                    <a href="{{ url_for('main.blog', blog_id=blog.id) }}"
+                                       class="btn btn-outline-secondary d-flex align-items-center">
+                                        <i class="bi bi-arrow-left me-2"></i>Назад в блог
+                                    </a>
+                                {% else %}
+                                    <a href="{{ url_for('main.index') }}"
+                                       class="btn btn-outline-secondary d-flex align-items-center">
+                                        <i class="bi bi-arrow-left me-2"></i>На главную
+                                    </a>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary d-flex align-items-center" id="previewBtn">
+                                    <i class="bi bi-eye me-2"></i>Предпросмотр
+                                </button>
+                                <button type="submit" class="btn btn-primary d-flex align-items-center">
+                                    {% if blog %}
+                                        <i class="bi bi-check-circle me-2"></i>Сохранить изменения
+                                    {% else %}
+                                        <i class="bi bi-plus-circle me-2"></i>Создать блог
+                                    {% endif %}
+                                </button>
+                            </div>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Советы по созданию блога -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">
+                        <i class="bi bi-lightbulb me-2"></i>Советы по созданию успешного блога
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body">
+                                    <div class="text-center mb-3">
+                                        <i class="bi bi-chat-square-text text-primary fs-3"></i>
+                                    </div>
+                                    <h6 class="fw-semibold text-center mb-2">Определите тему</h6>
+                                    <p class="text-muted small text-center mb-0">Выберите конкретную тематику для вашего блога</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body">
+                                    <div class="text-center mb-3">
+                                        <i class="bi bi-people text-success fs-3"></i>
+                                    </div>
+                                    <h6 class="fw-semibold text-center mb-2">Знайте аудиторию</h6>
+                                    <p class="text-muted small text-center mb-0">Пишите для вашей целевой аудитории</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-0 bg-light h-100">
+                                <div class="card-body">
+                                    <div class="text-center mb-3">
+                                        <i class="bi bi-calendar-check text-warning fs-3"></i>
+                                    </div>
+                                    <h6 class="fw-semibold text-center mb-2">Будьте последовательны</h6>
+                                    <p class="text-muted small text-center mb-0">Регулярно публикуйте новые материалы</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Модальное окно предпросмотра -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="previewModalLabel">
+                    <i class="bi bi-eye me-2"></i>Предпросмотр блога
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="preview-card card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h3 class="fw-bold mb-3" id="previewTitle">Название блога</h3>
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3"
+                                 style="width: 40px; height: 40px;">
+                                <i class="bi bi-person text-primary"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">{{ current_user.username }}</div>
+                                <small class="text-muted">Автор блога</small>
+                            </div>
+                        </div>
+                        <p class="mb-0" id="previewDescription">
+                            Здесь будет описание вашего блога...
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control-lg {
+        font-size: 1.25rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    .form-check-label {
+        font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1.5rem !important;
+        }
+        
+        .form-control-lg {
+            font-size: 1.125rem;
+            padding: 0.625rem 0.875rem;
+        }
+        
+        .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .d-flex {
+            flex-wrap: wrap;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .card-body {
+            padding: 1.25rem !important;
+        }
+        
+        .col-md-4 {
+            margin-bottom: 1rem;
+        }
+        
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const previewBtn = document.getElementById('previewBtn');
+        const titleField = document.querySelector('input[name="title"]');
+        const descriptionField = document.querySelector('textarea[name="description"]');
+        const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+        const previewTitle = document.getElementById('previewTitle');
+        const previewDescription = document.getElementById('previewDescription');
+        
+        // Обработчик кнопки предпросмотра
+        if (previewBtn) {
+            previewBtn.addEventListener('click', function() {
+                const title = titleField?.value || 'Название блога';
+                const description = descriptionField?.value || 'Здесь будет описание вашего блога...';
+                
+                previewTitle.textContent = title;
+                previewDescription.textContent = description;
+                previewModal.show();
+            });
+        }
+        
+        // Автофокус на поле названия
+        if (titleField) {
+            titleField.focus();
+        }
+        
+        // Подсчет символов для описания
+        if (descriptionField) {
+            descriptionField.addEventListener('input', function() {
+                const charCount = this.value.length;
+                const counter = document.getElementById('descriptionCounter') || 
+                    (() => {
+                        const counter = document.createElement('div');
+                        counter.id = 'descriptionCounter';
+                        counter.className = 'form-text text-end';
+                        this.parentNode.appendChild(counter);
+                        return counter;
+                    })();
+                
+                counter.textContent = `${charCount} символов`;
+                
+                if (charCount > 500) {
+                    counter.classList.add('text-warning');
+                } else {
+                    counter.classList.remove('text-warning');
+                }
+            });
+        }
+        
+        // Восстановление сохраненных значений
+        const savedValues = JSON.parse(localStorage.getItem('blogFormData') || '{}');
+        if (titleField && savedValues.title) {
+            titleField.value = savedValues.title;
+        }
+        if (descriptionField && savedValues.description) {
+            descriptionField.value = savedValues.description;
+        }
+        
+        // Автосохранение
+        [titleField, descriptionField].forEach(field => {
+            if (field) {
+                field.addEventListener('input', function() {
+                    const formData = {
+                        title: titleField?.value || '',
+                        description: descriptionField?.value || ''
+                    };
+                    localStorage.setItem('blogFormData', JSON.stringify(formData));
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}

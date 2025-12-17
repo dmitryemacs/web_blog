@@ -1,42 +1,346 @@
 {% extends "base.html" %}
+{% block title %}{{ title }} | DailyPage{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
+<div class="container mt-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-lg">
-                <div class="card-body">
-                    <h2 class="card-title mb-4 text-center">{{ title }}</h2>
+        <div class="col-lg-10">
+            <!-- Хлебные крошки -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('main.index') }}" class="text-decoration-none">
+                            <i class="bi bi-house-door"></i>
+                        </a>
+                    </li>
+                    {% if post and post.blog %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('main.blog', blog_id=post.blog.id) }}" class="text-decoration-none">
+                            {{ post.blog.title|truncate(20) }}
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('main.post', post_id=post.id) }}" class="text-decoration-none">
+                            {{ post.title|truncate(20) }}
+                        </a>
+                    </li>
+                    {% elif blog %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ url_for('main.blog', blog_id=blog.id) }}" class="text-decoration-none">
+                            {{ blog.title|truncate(20) }}
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+                </ol>
+            </nav>
+
+            <!-- Форма -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body p-4 p-md-5">
+                    <h2 class="card-title mb-4 text-center fw-bold">
+                        {% if post %}
+                            <i class="bi bi-pencil-square me-2"></i>Редактирование поста
+                        {% else %}
+                            <i class="bi bi-plus-square me-2"></i>Новый пост
+                        {% endif %}
+                    </h2>
+
                     <form method="POST" enctype="multipart/form-data">
                         {{ form.hidden_tag() }}
-                        <div class="mb-3">
-                            {{ form.title.label(class="form-label") }}
-                            {{ form.title(class="form-control") }}
+
+                        <!-- Заголовок -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-type me-1"></i>Заголовок поста
+                            </label>
+                            {{ form.title(class="form-control form-control-lg", placeholder="Введите заголовок...") }}
                             {% for error in form.title.errors %}
-                                <div class="text-danger">{{ error }}</div>
+                                <div class="text-danger small mt-1 d-flex align-items-center">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
                             {% endfor %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.content.label(class="form-label") }}
-                            {{ form.content(class="form-control", rows="10") }}
+
+                        <!-- Содержимое -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-text-paragraph me-1"></i>Содержимое
+                            </label>
+                            {{ form.content(class="form-control", rows="12", placeholder="Напишите ваш пост здесь...", id="postContent") }}
                             {% for error in form.content.errors %}
-                                <div class="text-danger">{{ error }}</div>
+                                <div class="text-danger small mt-1 d-flex align-items-center">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
                             {% endfor %}
+                            <div class="form-text">
+                                Поддерживается Markdown разметка. Можно использовать **жирный**, *курсив*,
+                                [ссылки](http://example.com) и многое другое.
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="attachments" class="form-label">Прикрепить файлы (можно несколько)</label>
+
+                        <!-- Прикрепленные файлы -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-paperclip me-1"></i>Прикрепленные файлы
+                            </label>
                             <input type="file" class="form-control" id="attachments" name="attachments" multiple>
-                            <small class="form-text text-muted">
-                                Удерживайте Ctrl (или Cmd на Mac) для выбора нескольких файлов.<br>
-                                Разрешены: изображения (jpg, png, gif), аудио (mp3, wav, ogg), видео (mp4, mov, avi)
-                            </small>
+                            <div class="form-text">
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary">
+                                        <i class="bi bi-image me-1"></i>Изображения
+                                    </span>
+                                    <span class="badge bg-danger bg-opacity-10 text-danger">
+                                        <i class="bi bi-film me-1"></i>Видео
+                                    </span>
+                                    <span class="badge bg-success bg-opacity-10 text-success">
+                                        <i class="bi bi-music-note-beamed me-1"></i>Аудио
+                                    </span>
+                                    <span class="badge bg-warning bg-opacity-10 text-warning">
+                                        <i class="bi bi-file-earmark-text me-1"></i>Документы
+                                    </span>
+                                </div>
+                                <small class="d-block mt-2">
+                                    Максимальный размер файла: 10 MB. Поддерживаемые форматы:
+                                    jpg, png, gif, mp4, mov, mp3, wav, pdf, doc, docx.
+                                </small>
+                            </div>
                         </div>
-                        <div class="d-grid gap-2">
-                            {{ form.submit(class="btn btn-primary") }}
+
+                        <!-- Теги -->
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-tags me-1"></i>Теги (опционально)
+                            </label>
+                            <input type="text" class="form-control" name="tags"
+                                   placeholder="Введите теги через запятую (например: технологии, программирование, советы)"
+                                   value="{{ post.tags|map(attribute='name')|join(', ') if post }}">
+                            <div class="form-text">
+                                Теги помогают читателям найти ваш пост. Используйте запятую для разделения.
+                            </div>
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mt-5">
+                            <div>
+                                {% if post %}
+                                    <a href="{{ url_for('main.post', post_id=post.id) }}"
+                                       class="btn btn-outline-secondary d-flex align-items-center">
+                                        <i class="bi bi-arrow-left me-2"></i>Назад к посту
+                                    </a>
+                                {% elif blog %}
+                                    <a href="{{ url_for('main.blog', blog_id=blog.id) }}"
+                                       class="btn btn-outline-secondary d-flex align-items-center">
+                                        <i class="bi bi-arrow-left me-2"></i>Назад в блог
+                                    </a>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-primary d-flex align-items-center" id="previewBtn">
+                                    <i class="bi bi-eye me-2"></i>Предпросмотр
+                                </button>
+                                <button type="submit" class="btn btn-primary d-flex align-items-center">
+                                    {% if post %}
+                                        <i class="bi bi-check-circle me-2"></i>Сохранить изменения
+                                    {% else %}
+                                        <i class="bi bi-plus-circle me-2"></i>Создать пост
+                                    {% endif %}
+                                </button>
+                            </div>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Подсказки по форматированию -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">
+                        <i class="bi bi-info-circle me-2"></i>Подсказки по форматированию
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6 class="fw-semibold mb-2">Основное форматирование</h6>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><code>**жирный текст**</code></li>
+                                        <li><code>*курсивный текст*</code></li>
+                                        <li><code># Заголовок 1</code></li>
+                                        <li><code>## Заголовок 2</code></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6 class="fw-semibold mb-2">Списки и код</h6>
+                                    <ul class="list-unstyled mb-0">
+                                        <li><code>- элемент списка</code></li>
+                                        <li><code>1. нумерованный список</code></li>
+                                        <li><code>`код в строке`</code></li>
+                                        <li><code>```блок кода```</code></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Модальное окно предпросмотра -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="previewModalLabel">
+                    <i class="bi bi-eye me-2"></i>Предпросмотр поста
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="preview-content" id="previewContent">
+                    <!-- Предпросмотр будет вставлен здесь -->
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control-lg {
+        font-size: 1.25rem;
+        padding: 0.75rem 1rem;
+    }
+    
+    #postContent {
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    
+    .preview-content {
+        line-height: 1.8;
+        font-size: 1.1rem;
+    }
+    
+    .preview-content h1, .preview-content h2, .preview-content h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .preview-content pre {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+    }
+    
+    .preview-content code {
+        background-color: #f8f9fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+    }
+    
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1.5rem !important;
+        }
+        
+        .form-control-lg {
+            font-size: 1.125rem;
+            padding: 0.625rem 0.875rem;
+        }
+        
+        #postContent {
+            rows: 8;
+        }
+        
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .card-body {
+            padding: 1.25rem !important;
+        }
+        
+        .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .d-flex {
+            flex-wrap: wrap;
+        }
+        
+        .col-md-6 {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const previewBtn = document.getElementById('previewBtn');
+        const postContent = document.getElementById('postContent');
+        const previewContent = document.getElementById('previewContent');
+        const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+        
+        // Функция для преобразования Markdown в HTML (упрощенная версия)
+        function simpleMarkdown(text) {
+            return text
+                .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+                .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+                .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
+                .replace(/^- (.*$)/gm, '<li>$1</li>')
+                .replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>')
+                .replace(/\n/g, '<br>');
+        }
+        
+        // Обработчик кнопки предпросмотра
+        if (previewBtn) {
+            previewBtn.addEventListener('click', function() {
+                const content = postContent.value || 'Здесь будет предпросмотр вашего поста...';
+                const htmlContent = simpleMarkdown(content);
+                previewContent.innerHTML = htmlContent;
+                previewModal.show();
+            });
+        }
+        
+        // Автофокус на поле заголовка
+        const titleField = document.querySelector('input[name="title"]');
+        if (titleField) {
+            titleField.focus();
+        }
+        
+        // Подсчет символов
+        if (postContent) {
+            postContent.addEventListener('input', function() {
+                const charCount = this.value.length;
+                const wordCount = this.value.split(/\s+/).filter(word => word.length > 0).length;
+                
+                // Можно добавить отображение счетчика
+                console.log(`Символов: ${charCount}, Слов: ${wordCount}`);
+            });
+        }
+    });
+</script>
 {% endblock %}
