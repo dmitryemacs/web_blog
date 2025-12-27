@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Профиль пользователя{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <i class="bi bi-person-circle me-2"></i>Мой профиль
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-4 mb-md-0">
+                        <div class="avatar-icon mb-3">
+                            <i class="bi bi-person-circle" style="font-size: 4rem; color: var(--primary-color);"></i>
+                        </div>
+                        <h4 class="mb-2">{{ current_user.username }}</h4>
+                        <p class="text-muted mb-3">{{ current_user.email }}</p>
+                        <p class="text-muted mb-1">Роль: <span class="badge bg-info">{{ current_user.role }}</span></p>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="mb-4">
+                            <h5 class="mb-3">Информация о пользователе</h5>
+                            <div class="row mb-2">
+                                <div class="col-4"><strong>ID пользователя:</strong></div>
+                                <div class="col-8">{{ current_user.id }}</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-4"><strong>Дата регистрации:</strong></div>
+                                <div class="col-8">Недоступно</div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-4"><strong>Количество блогов:</strong></div>
+                                <div class="col-8">{{ current_user.blogs|length }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Форма обновления профиля -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-pencil-square me-2"></i>Обновить информацию профиля
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('main.profile') }}">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control") }}
+                        {% if form.username.errors %}
+                            <div class="text-danger">
+                                {% for error in form.username.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control") }}
+                        {% if form.email.errors %}
+                            <div class="text-danger">
+                                {% for error in form.email.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i>Обновить профиль
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Форма изменения пароля -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="bi bi-lock-fill me-2"></i>Изменить пароль
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('main.profile') }}">
+                    {{ password_form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ password_form.current_password.label(class="form-label") }}
+                        {{ password_form.current_password(class="form-control") }}
+                        {% if password_form.current_password.errors %}
+                            <div class="text-danger">
+                                {% for error in password_form.current_password.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ password_form.new_password.label(class="form-label") }}
+                        {{ password_form.new_password(class="form-control") }}
+                        {% if password_form.new_password.errors %}
+                            <div class="text-danger">
+                                {% for error in password_form.new_password.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ password_form.confirm_password.label(class="form-label") }}
+                        {{ password_form.confirm_password(class="form-control") }}
+                        {% if password_form.confirm_password.errors %}
+                            <div class="text-danger">
+                                {% for error in password_form.confirm_password.errors %}
+                                    <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="bi bi-key-fill me-1"></i>Изменить пароль
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+<task_progress>
+- [x] Analyze current project structure and authentication
+- [x] Create user profile template
+- [ ] Add user profile route
+- [ ] Create forms for profile updates
+- [ ] Implement password change functionality
+- [ ] Implement email/username change functionality
+- [ ] Add navigation to user profile
+- [ ] Test the implementation
+</task_progress>
+</write_to_file>
