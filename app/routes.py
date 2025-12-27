@@ -1,5 +1,6 @@
 # routes.py
 import os
+import mimetypes
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, abort
 from app.models import User, Blog, Post, Comment, db, Subscription, Like, Attachment 
 from flask_login import login_user, login_required, logout_user, current_user
@@ -12,6 +13,7 @@ from datetime import datetime
 bp = Blueprint('main', __name__)
 
 # ---------------- Вспомогательные функции для файлов ----------------
+
 def allowed_file(filename):
     allowed_extensions = {
         'png', 'jpg', 'jpeg', 'gif',  # изображения
@@ -20,6 +22,48 @@ def allowed_file(filename):
         'pdf', 'doc', 'docx', 'txt', 'rtf'  # документы
     }
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+# Множество разрешенных MIME-типов для дополнительной безопасности
+ALLOWED_MIME_TYPES = {
+    # Изображения
+    'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp',
+    # Аудио
+    'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/flac', 'audio/x-m4a',
+    # Видео
+    'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm',
+    # Документы
+    'application/pdf', 'application/msword', 
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain', 'application/rtf', 'application/vnd.oasis.opendocument.text'
+}
+
+def is_safe_mime_type(mimetype):
+    """Проверяет, что MIME-тип разрешен"""
+    if not mimetype:
+        return False
+    # Нормализуем MIME-тип (убираем кодировку и параметры)
+    mimetype = mimetype.split(';')[0].strip().lower()
+    return mimetype in ALLOWED_MIME_TYPES
+
+def validate_file_upload(file):
+    """Проверяет файл на безопасность"""
+    if not file or not file.filename:
+        return False, "Файл не выбран"
+    
+    # Проверка расширения
+    if not allowed_file(file.filename):
+        return False, "Недопустимый тип файла"
+    
+    # Проверка MIME-типа
+    mimetype = file.mimetype
+    if not is_safe_mime_type(mimetype):
+        # Дополнительная проверка через mimetypes модуль
+        guessed_type, _ = mimetypes.guess_type(file.filename)
+        if not guessed_type or guessed_type not in ALLOWED_MIME_TYPES:
+            return False, "Недопустимый MIME-тип файла"
+        mimetype = guessed_type
+    
+    return True, mimetype
 
 def get_file_type(extension):
     image_ext = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
@@ -36,6 +80,7 @@ def get_file_type(extension):
     elif extension in doc_ext:
         return 'document'
     return 'other'
+
 # ---------------- Регистрация и логин ----------------
 
 @bp.route('/register', methods=['GET', 'POST'])
@@ -81,7 +126,17 @@ def logout():
 @bp.route('/')
 def index():
     blogs = Blog.query.order_by(Blog.created_at.desc()).all()
-    return render_template('index.html', title='Главная', blogs=blogs)
+    
+    # Статистика для главной страницы
+    from app.models import User, Post
+    users_count = User.query.count()
+    posts_count = Post.query.count()
+    
+    return render_template('index.html', 
+                         title='Главная', 
+                         blogs=blogs,
+                         users_count=users_count,
+                         posts_count=posts_count)
 
 @bp.route('/new_blog', methods=['GET', 'POST'])
 @login_required
@@ -129,7 +184,7 @@ def edit_blog(blog_id):
         form.title.data = blog.title
         form.description.data = blog.description
         
-    return render_template('blog_form.html', title=f'Редактировать блог: {blog.title}', form=form)
+    return render_template('blog_form.html', title=f'Редактировать блог: {blog.title}', form=form, blog=blog)
 
 @bp.route('/blog/<int:blog_id>/delete', methods=['POST'])
 @login_required
@@ -194,11 +249,30 @@ def new_post(blog_id):
     if form.validate_on_submit():
         post = Post(title=form.title.data, content=form.content.data, blog=blog)
         db.session.add(post)
+        db.session.flush()  # Чтобы получить ID поста
         
-        # Обработка прикрепленного файла - ИСПРАВЛЕНО: form.attachment.data вместо form.attachments.data
+        # Обработка тегов
+        tags_input = request.form.get('tags', '').strip()
+        if tags_input:
+            from app.models import Tag
+            tag_names = [tag.strip().lower() for tag in tags_input.split(',') if tag.strip()]
+            for tag_name in tag_names:
+                tag = Tag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(name=tag_name)
+                    db.session.add(tag)
+                    db.session.flush()
+                if tag not in post.tags:
+                    post.tags.append(tag)
+        
+        # Обработка прикрепленного файла с улучшенной валидацией
         if form.attachment.data:
             file = form.attachment.data
-            if file and allowed_file(file.filename):
+            is_valid, validation_result = validate_file_upload(file)
+            
+            if not is_valid:
+                flash(f'Ошибка загрузки файла: {validation_result}', 'danger')
+            else:
                 original_filename = file.filename
                 filename = secure_filename(original_filename)
                 
@@ -215,20 +289,29 @@ def new_post(blog_id):
                     file_path = os.path.join(upload_path, unique_filename)
                     counter += 1
                 
-                file.save(file_path)
-                
-                extension = unique_filename.rsplit('.', 1)[1].lower()
-                file_type = get_file_type(extension)
-                
-                attachment = Attachment(
-                    post=post,
-                    user_id=current_user.id,
-                    filename=unique_filename,
-                    original_filename=original_filename,
-                    mimetype=file.mimetype,
-                    file_type=file_type
-                )
-                db.session.add(attachment)
+                try:
+                    file.save(file_path)
+                    
+                    extension = unique_filename.rsplit('.', 1)[1].lower()
+                    file_type = get_file_type(extension)
+                    
+                    attachment = Attachment(
+                        post=post,
+                        user_id=current_user.id,
+                        filename=unique_filename,
+                        original_filename=original_filename,
+                        mimetype=validation_result,  # Используем проверенный MIME-тип
+                        file_type=file_type
+                    )
+                    db.session.add(attachment)
+                except Exception as e:
+                    flash(f'Ошибка при сохранении файла: {str(e)}', 'danger')
+                    # Удаляем файл, если он был частично сохранен
+                    if os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except:
+                            pass
 
         db.session.commit()
         flash('Ваш пост успешно создан!', 'success')
@@ -263,13 +346,21 @@ def post(post_id):
         # КЛЮЧЕВОЙ МОМЕНТ: РЕДИРЕКТ
         return redirect(url_for('main.post', post_id=post.id)) 
         
+    # Навигация между постами (предыдущий и следующий)
+    all_posts = Post.query.filter_by(blog_id=post.blog_id).order_by(Post.created_at.desc()).all()
+    post_index = next((i for i, p in enumerate(all_posts) if p.id == post.id), None)
+    prev_post = all_posts[post_index + 1] if post_index is not None and post_index + 1 < len(all_posts) else None
+    next_post = all_posts[post_index - 1] if post_index is not None and post_index > 0 else None
+    
     return render_template('post.html', 
                            title=post.title, 
                            post=post, 
                            comments=comments, 
                            form=form, 
                            is_liked=is_liked,
-                           like_count=like_count)
+                           like_count=like_count,
+                           prev_post=prev_post,
+                           next_post=next_post)
 
 # ---------------- Функции редактирования и удаления ----------------
 
@@ -287,6 +378,21 @@ def edit_post(post_id):
     if form.validate_on_submit():
         post.title = form.title.data
         post.content = form.content.data
+        
+        # Обработка тегов
+        tags_input = request.form.get('tags', '').strip()
+        post.tags.clear()  # Очищаем существующие теги
+        if tags_input:
+            from app.models import Tag
+            tag_names = [tag.strip().lower() for tag in tags_input.split(',') if tag.strip()]
+            for tag_name in tag_names:
+                tag = Tag.query.filter_by(name=tag_name).first()
+                if not tag:
+                    tag = Tag(name=tag_name)
+                    db.session.add(tag)
+                    db.session.flush()
+                post.tags.append(tag)
+        
         db.session.commit()
         flash('Ваш пост был успешно обновлен!', 'success')
         return redirect(url_for('main.post', post_id=post.id))
@@ -295,7 +401,7 @@ def edit_post(post_id):
         form.title.data = post.title
         form.content.data = post.content
         
-    return render_template('post_form.html', title=f'Редактировать пост: {post.title}', form=form, post=post)
+    return render_template('post_form.html', title=f'Редактировать пост: {post.title}', form=form, post=post, blog=post.blog)
 
 @bp.route('/post/<int:post_id>/delete', methods=['POST'])
 @login_required
@@ -363,8 +469,39 @@ def delete_comment(comment_id):
 
 @bp.route('/uploads/<path:filename>')
 def uploaded_file(filename):
-    from flask import send_from_directory
-    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+    """Маршрут для отдачи загруженных файлов"""
+    from flask import send_from_directory, abort
+    import os
+    from werkzeug.utils import secure_filename
+
+    # Безопасная проверка пути
+    upload_folder = current_app.config['UPLOAD_FOLDER']
+
+    # Проверяем, что файл существует и находится в разрешенной директории
+    try:
+        # Используем secure_filename для дополнительной безопасности
+        safe_filename = secure_filename(filename)
+
+        # Проверяем, что файл существует
+        file_path = os.path.join(upload_folder, safe_filename)
+        if not os.path.exists(file_path):
+            abort(404)
+
+        # Проверяем, что путь находится внутри upload_folder
+        if not os.path.abspath(file_path).startswith(os.path.abspath(upload_folder)):
+            abort(403)
+
+        # Получаем MIME-тип файла из базы данных
+        mimetype = None
+        attachment = Attachment.query.filter_by(filename=safe_filename).first()
+        if attachment:
+            mimetype = attachment.mimetype
+
+        return send_from_directory(upload_folder, safe_filename, mimetype=mimetype)
+
+    except Exception as e:
+        current_app.logger.error(f"Error serving file {filename}: {str(e)}")
+        abort(500)
 
 # delete attachment
 @bp.route('/attachment/<int:attachment_id>/delete', methods=['POST'])
