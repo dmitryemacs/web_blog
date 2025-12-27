@@ -2,8 +2,9 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError
-from app.models import User 
+from app.models import User
 from flask_wtf.file import FileField, FileAllowed  # Убрали MultipleFileField
+from flask_login import current_user
 
 class RegistrationForm(FlaskForm):
     username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=2, max=80)])
@@ -45,3 +46,26 @@ class PostForm(FlaskForm):
 class CommentForm(FlaskForm):
     content = TextAreaField('Ваш комментарий', validators=[DataRequired(), Length(min=1, max=500)])
     submit = SubmitField('Оставить комментарий')
+
+class UpdateProfileForm(FlaskForm):
+    username = StringField('Имя пользователя', validators=[DataRequired(), Length(min=2, max=80)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Обновить профиль')
+
+    def validate_username(self, username):
+        if username.data != current_user.username:
+            user = User.query.filter_by(username=username.data).first()
+            if user:
+                raise ValidationError('Это имя пользователя уже занято. Пожалуйста, выберите другое.')
+
+    def validate_email(self, email):
+        if email.data != current_user.email:
+            user = User.query.filter_by(email=email.data).first()
+            if user:
+                raise ValidationError('Этот email уже зарегистрирован. Пожалуйста, используйте другой.')
+
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField('Текущий пароль', validators=[DataRequired()])
+    new_password = PasswordField('Новый пароль', validators=[DataRequired(), Length(min=6, max=100)])
+    confirm_password = PasswordField('Повторите новый пароль', validators=[DataRequired(), EqualTo('new_password', message='Пароли должны совпадать')])
+    submit = SubmitField('Изменить пароль')
