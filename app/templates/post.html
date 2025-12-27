@@ -105,7 +105,7 @@
                 <div class="row g-4">
                     {% for attachment in post.attachments %}
                     <div class="col-md-6 col-lg-4">
-                        <div class="card border h-100 hover-lift">
+                        <div class="card border-0 shadow-sm h-100 hover-lift" style="transition: all 0.3s ease;">
                             <div class="card-body d-flex flex-column p-3">
                                 <!-- Иконка и название -->
                                 <div class="d-flex align-items-start mb-3">
@@ -148,33 +148,59 @@
                                 </div>
 
                                 <!-- Предпросмотр -->
-                                {% set file_path = url_for('static', filename='uploads/' + attachment.filename) %}
+                                {% set file_path = url_for('main.uploaded_file', filename=attachment.filename) %}
                                 {% if attachment.file_type == 'image' %}
                                 <div class="text-center mb-3">
                                     <a href="{{ file_path }}"
                                        data-fancybox="gallery"
-                                       data-caption="{{ attachment.original_filename }}">
+                                       data-caption="{{ attachment.original_filename }}"
+                                       class="d-block position-relative">
                                         <img src="{{ file_path }}"
                                              alt="{{ attachment.original_filename }}"
                                              class="img-fluid rounded shadow-sm"
-                                             style="max-height: 150px; object-fit: contain; cursor: zoom-in;">
+                                             style="max-height: 250px; max-width: 100%; object-fit: contain; cursor: zoom-in; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); width: 100%;"
+                                             loading="lazy"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                        <div class="rounded bg-light d-none align-items-center justify-content-center" 
+                                             style="min-height: 200px; width: 100%;">
+                                            <div class="text-center p-3">
+                                                <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                                <p class="text-muted small mb-0 mt-2">Не удалось загрузить изображение</p>
+                                            </div>
+                                        </div>
                                     </a>
+                                </div>
+                                {% elif attachment.file_type == 'document' %}
+                                <div class="text-center mb-3 p-4 bg-light rounded border">
+                                    <div class="mb-3">
+                                        {% if 'pdf' in attachment.mimetype %}
+                                            <i class="bi bi-file-earmark-pdf" style="font-size: 3rem; color: #dc3545;"></i>
+                                        {% elif 'word' in attachment.mimetype or 'document' in attachment.mimetype %}
+                                            <i class="bi bi-file-earmark-word" style="font-size: 3rem; color: #0d6efd;"></i>
+                                        {% else %}
+                                            <i class="bi bi-file-earmark-text" style="font-size: 3rem; color: #6c757d;"></i>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-muted small mb-0">{{ attachment.original_filename }}</p>
+                                    <p class="text-muted small mb-0 mt-1">{{ attachment.mimetype }}</p>
                                 </div>
                                 {% endif %}
 
                                 <!-- Плееры -->
                                 {% if attachment.file_type == 'audio' %}
                                 <div class="mb-3">
-                                    <audio controls class="w-100">
+                                    <audio controls class="w-100" preload="metadata">
                                         <source src="{{ file_path }}" type="{{ attachment.mimetype }}">
                                         Ваш браузер не поддерживает аудио.
+                                        <a href="{{ file_path }}" download>Скачать аудио</a>
                                     </audio>
                                 </div>
                                 {% elif attachment.file_type == 'video' %}
                                 <div class="mb-3">
-                                    <video controls class="w-100 rounded" style="max-height: 200px;">
+                                    <video controls class="w-100 rounded" style="max-height: 300px; background: #000;" preload="metadata">
                                         <source src="{{ file_path }}" type="{{ attachment.mimetype }}">
                                         Ваш браузер не поддерживает видео.
+                                        <a href="{{ file_path }}" download>Скачать видео</a>
                                     </video>
                                 </div>
                                 {% endif %}
@@ -184,6 +210,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <a href="{{ file_path }}"
                                            target="_blank"
+                                           download="{{ attachment.original_filename }}"
                                            class="btn btn-outline-primary btn-sm d-flex align-items-center"
                                            title="Скачать">
                                             <i class="bi bi-download me-1"></i>Скачать
@@ -259,9 +286,6 @@
             </div>
 
             <!-- Навигация между постами -->
-            {% set prev_post = post.blog.posts|selectattr('id', 'lt', post.id)|first %}
-            {% set next_post = post.blog.posts|selectattr('id', 'gt', post.id)|first %}
-
             {% if prev_post or next_post %}
             <div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-5">
                 {% if prev_post %}

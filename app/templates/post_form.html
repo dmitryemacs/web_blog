@@ -82,9 +82,14 @@
                         <!-- Прикрепленные файлы -->
                         <div class="mb-4">
                             <label class="form-label fw-semibold">
-                                <i class="bi bi-paperclip me-1"></i>Прикрепленные файлы
+                                <i class="bi bi-paperclip me-1"></i>Прикрепленный файл
                             </label>
-                            <input type="file" class="form-control" id="attachments" name="attachments" multiple>
+                            {{ form.attachment(class="form-control", id="attachment") }}
+                            {% for error in form.attachment.errors %}
+                                <div class="text-danger small mt-1 d-flex align-items-center">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                </div>
+                            {% endfor %}
                             <div class="form-text">
                                 <div class="d-flex flex-wrap gap-2 mt-2">
                                     <span class="badge bg-primary bg-opacity-10 text-primary">
