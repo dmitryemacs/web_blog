@@ -44,6 +44,14 @@ class Blog(db.Model):
     posts = db.relationship('Post', backref='blog', lazy=True, cascade='all, delete-orphan') # Посты в этом блоге
     subscribers = db.relationship('Subscription', backref='blog', lazy=True, cascade='all, delete-orphan') # Подписчики блога
 
+    @property
+    def total_comments(self):
+        """Подсчитывает общее количество комментариев во всех постах блога"""
+        total = 0
+        for post in self.posts:
+            total += len(post.comments)
+        return total
+
     def __repr__(self):
         return f"Blog('{self.title}', 'Owner ID: {self.owner_id}')"
 
@@ -61,6 +69,14 @@ class Post(db.Model):
     
     # Новое отношение для прикрепленных файлов
     attachments = db.relationship('Attachment', backref='post', lazy=True, cascade='all, delete-orphan', foreign_keys='Attachment.post_id') 
+
+    @property
+    def read_time(self):
+        """Вычисляет примерное время чтения поста (в минутах)"""
+        words_per_minute = 200  # Средняя скорость чтения
+        word_count = len(self.content.split())
+        minutes = max(1, round(word_count / words_per_minute))
+        return minutes
 
     def __repr__(self):
         return f"Post('{self.title}', '{self.created_at}')"
