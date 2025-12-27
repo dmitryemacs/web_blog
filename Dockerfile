@@ -25,4 +25,6 @@ RUN if [ -f "init-db.sh" ]; then chmod +x init-db.sh; fi
 
 EXPOSE 5000
 
-CMD ["flask", "run", "--host=0.0.0.0"]
+# Используем gunicorn для продакшена, flask run для разработки
+# Для разработки переопределите CMD в docker-compose.yml
+CMD ["gunicorn", "--config", "gunicorn_config.py", "run:app"]
