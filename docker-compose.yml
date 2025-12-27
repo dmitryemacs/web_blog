@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -17,7 +15,7 @@ services:
     command: >
       sh -c "sleep 3 &&
              python create_tables.py &&
-             flask run --host=0.0.0.0"
+             gunicorn --config gunicorn_config.py run:app"
 
   db:
     image: postgres:13-alpine
@@ -27,8 +25,6 @@ services:
       - POSTGRES_USER=blog_user
       - POSTGRES_PASSWORD=blog_password
       - POSTGRES_DB=blogdb
-    ports:
-      - "5432:5432"
 
 volumes:
   postgres_data:
