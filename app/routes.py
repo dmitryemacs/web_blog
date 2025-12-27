@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from app.models import User, Blog, Post, Comment, db, Subscription, Like, Attachment 
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from app.forms import RegistrationForm, LoginForm, BlogForm, PostForm, CommentForm
+from app.forms import RegistrationForm, LoginForm, BlogForm, PostForm, CommentForm, UpdateProfileForm, ChangePasswordForm
 from werkzeug.utils import secure_filename
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime
@@ -529,3 +529,36 @@ def delete_attachment(attachment_id):
     
     flash('Вложение удалено.', 'success')
     return redirect(url_for('main.post', post_id=post_id))
+
+# ---------------- Пользовательский профиль ----------------
+
+@bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    form = UpdateProfileForm()
+    password_form = ChangePasswordForm()
+
+    # Заполняем форму текущими данными пользователя
+    if request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+
+    # Обработка обновления профиля
+    if form.validate_on_submit():
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        db.session.commit()
+        flash('Ваш профиль успешно обновлен!', 'success')
+        return redirect(url_for('main.profile'))
+
+    # Обработка изменения пароля
+    if password_form.validate_on_submit():
+        if not check_password_hash(current_user.password, password_form.current_password.data):
+            flash('Текущий пароль введен неверно.', 'danger')
+        else:
+            current_user.password = generate_password_hash(password_form.new_password.data)
+            db.session.commit()
+            flash('Ваш пароль успешно изменен!', 'success')
+            return redirect(url_for('main.profile'))
+
+    return render_template('profile.html', form=form, password_form=password_form)
