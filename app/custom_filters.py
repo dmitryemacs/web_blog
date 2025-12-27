@@ -1,5 +1,5 @@
 # app/custom_filters.py
-from flask import Markup
+from markupsafe import Markup
 
 def nl2br(value):
     """Преобразует переносы строк в теги <br> для HTML"""
